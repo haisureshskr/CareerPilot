@@ -39,6 +39,8 @@ interface QueueViewProps {
   consentAccepted: boolean;
   guardrails: GuardrailStatus;
   liveCooldown: number;
+  autoOpenSandboxQueueId?: string | null;
+  onConsumeAutoOpenSandbox?: () => void;
   onSaveToVault: (
     queueId: string,
     answers: Array<{ id: string; question: string; answer: string; confidence: 'AMBER' | 'GREEN' }>
@@ -72,6 +74,8 @@ export const QueueView: React.FC<QueueViewProps> = ({
   consentAccepted,
   guardrails,
   liveCooldown,
+  autoOpenSandboxQueueId,
+  onConsumeAutoOpenSandbox,
   onSaveToVault,
   onApproveSubmit,
   onSkip,
@@ -217,6 +221,14 @@ export const QueueView: React.FC<QueueViewProps> = ({
       captchaChecked: false,
     });
   };
+
+  React.useEffect(() => {
+    if (!autoOpenSandboxQueueId) return;
+    const target = queue.find((q) => q.id === autoOpenSandboxQueueId);
+    if (!target) return;
+    onConsumeAutoOpenSandbox?.();
+    openSandbox(target);
+  }, [autoOpenSandboxQueueId, queue]);
 
   const runSandboxFill = () => {
     if (!sandbox) return;
@@ -502,6 +514,18 @@ export const QueueView: React.FC<QueueViewProps> = ({
                       <span>{item.portalComplexity}</span>
                       <span aria-hidden="true">·</span>
                       <span>{item.workMode}</span>
+                      <span aria-hidden="true">·</span>
+                      <span
+                        className={
+                          item.applicationMode === 'direct_resume'
+                            ? 'font-semibold text-emerald-700'
+                            : 'font-semibold text-indigo-700'
+                        }
+                      >
+                        {item.applicationMode === 'direct_resume'
+                          ? `Uploaded Base Resume${item.resumeLabel ? ` (${item.resumeLabel})` : ''}`
+                          : 'AI-Tailored Resume'}
+                      </span>
                     </div>
                     <h2 className="mt-1 text-xl font-bold text-slate-900 leading-snug">
                       {item.role}
@@ -608,15 +632,19 @@ export const QueueView: React.FC<QueueViewProps> = ({
                   )}
                 </div>
 
-                {/* Section B: Transparent Resume Diff */}
+                {/* Section B: Transparent Resume Diff or Direct Uploaded Resume Confirmation */}
                 <div className="p-5 sm:p-6 border-b border-slate-100">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        Transparent Resume Diff ({item.resumeDiffs.length} tailored bullets)
+                        {item.applicationMode === 'direct_resume'
+                          ? 'Direct Apply — Uploaded Base Resume (No AI Tailoring)'
+                          : `Transparent Resume Diff (${item.resumeDiffs.length} tailored bullets)`}
                       </h3>
                       <p className="text-xs text-slate-600 mt-0.5">
-                        Truthfulness Lock verified — reordered and keyword-aligned strictly from your Master Profile.
+                        {item.applicationMode === 'direct_resume'
+                          ? `Submitting "${item.resumeLabel || masterProfile.uploadedResumeFileName || 'Uploaded Base Resume'}" directly as uploaded — zero AI edits applied.`
+                          : 'Truthfulness Lock verified — reordered and keyword-aligned strictly from your Master Profile.'}
                       </p>
                     </div>
                     <button
@@ -625,37 +653,53 @@ export const QueueView: React.FC<QueueViewProps> = ({
                       className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors whitespace-nowrap self-start sm:self-auto"
                     >
                       <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                      Preview Tailored Resume
+                      {item.applicationMode === 'direct_resume'
+                        ? 'Preview Uploaded Resume'
+                        : 'Preview Tailored Resume'}
                     </button>
                   </div>
 
-                  <div className="mt-4 space-y-4">
-                    {item.resumeDiffs.map((diff, index) => (
-                      <div
-                        key={diff.id}
-                        className="border-t border-slate-100 pt-3.5 first:border-t-0 first:pt-0 space-y-2"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                          <span className="font-semibold text-slate-800">
-                            {index + 1}. {diff.experienceRef}
-                          </span>
-                          <span className="text-slate-500">{diff.rationale}</span>
-                        </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 text-xs leading-relaxed">
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600">
-                            <span className="block font-semibold text-slate-500 mb-1">Original</span>
-                            {diff.before}
-                          </div>
-                          <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 text-slate-900">
-                            <span className="block font-semibold text-indigo-700 mb-1">
-                              Tailored for {item.company}
-                            </span>
-                            {diff.after}
-                          </div>
-                        </div>
+                  {item.applicationMode === 'direct_resume' || item.resumeDiffs.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 flex items-start gap-3 text-xs text-emerald-950">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" aria-hidden="true" />
+                      <div>
+                        <p className="font-semibold">
+                          Original uploaded resume attached verbatim ({item.resumeLabel || masterProfile.uploadedResumeFileName || 'Uploaded Base Resume'})
+                        </p>
+                        <p className="mt-0.5 text-emerald-900/80">
+                          Human-in-the-Loop review, Q&amp;A Vault autofill, 20/day India cap, and 60s anti-spam cooldown remain active before submission.
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {item.resumeDiffs.map((diff, index) => (
+                        <div
+                          key={diff.id}
+                          className="border-t border-slate-100 pt-3.5 first:border-t-0 first:pt-0 space-y-2"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="font-semibold text-slate-800">
+                              {index + 1}. {diff.experienceRef}
+                            </span>
+                            <span className="text-slate-500">{diff.rationale}</span>
+                          </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 text-xs leading-relaxed">
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600">
+                              <span className="block font-semibold text-slate-500 mb-1">Original</span>
+                              {diff.before}
+                            </div>
+                            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 text-slate-900">
+                              <span className="block font-semibold text-indigo-700 mb-1">
+                                Tailored for {item.company}
+                              </span>
+                              {diff.after}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Section C: Pre-Filled Screening Questions (AMBER pinned above GREEN) */}
@@ -796,10 +840,14 @@ export const QueueView: React.FC<QueueViewProps> = ({
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
               <div>
                 <h3 id="tailored-resume-title" className="text-base font-bold text-slate-900">
-                  Tailored Resume Preview · {previewItem.company}
+                  {previewItem.applicationMode === 'direct_resume'
+                    ? `Uploaded Base Resume Preview · ${previewItem.company}`
+                    : `Tailored Resume Preview · ${previewItem.company}`}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Highlighted bullets reflect verified Truthfulness Lock edits for {previewItem.role}.
+                  {previewItem.applicationMode === 'direct_resume'
+                    ? `Direct apply with "${previewItem.resumeLabel || masterProfile.uploadedResumeFileName || 'Uploaded Base Resume'}" — zero AI modifications.`
+                    : `Highlighted bullets reflect verified Truthfulness Lock edits for ${previewItem.role}.`}
                 </p>
               </div>
               <button
@@ -990,7 +1038,9 @@ export const QueueView: React.FC<QueueViewProps> = ({
                   <div className="space-y-2 text-xs text-slate-700">
                     <p className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-indigo-600 shrink-0" />
-                      Attaching tailored resume ({sandbox.item.resumeDiffs.length} truthful bullet updates)
+                      {sandbox.item.applicationMode === 'direct_resume'
+                        ? `Attaching uploaded base resume (${sandbox.item.resumeLabel || masterProfile.uploadedResumeFileName || 'Uploaded Base Resume'} · 0 AI edits)`
+                        : `Attaching tailored resume (${sandbox.item.resumeDiffs.length} truthful bullet updates)`}
                     </p>
                     <p className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4 text-indigo-600 shrink-0" />

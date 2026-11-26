@@ -54,6 +54,7 @@ export interface MasterProfile {
   education: EducationItem[];
   projects: ProjectItem[];
   rawResumeText?: string;
+  uploadedResumeFileName?: string;
   lastParsedAt?: string;
 }
 
@@ -108,11 +109,14 @@ export interface JobListing {
   isCustom?: boolean;
   discoverySource?: 'resume_backend_search' | 'custom_jd' | 'catalog';
   resumeMatchReason?: string;
+  notInterested?: boolean;
+  notInterestedAt?: string;
 }
 
 export interface BackendJobSearchResponse {
   jobs: JobListing[];
   totalCatalogCount: number;
+  notInterestedCount?: number;
   resumeProfileSummary: {
     fullName: string;
     headline: string;
@@ -162,6 +166,8 @@ export interface QueueItem {
   screeningQuestions: ScreeningAnswer[];
   createdAt: string;
   status: 'pending' | 'submitted' | 'action_required' | 'skipped';
+  applicationMode?: 'tailored' | 'direct_resume';
+  resumeLabel?: string;
 }
 
 export interface TrackedApplication {
@@ -179,6 +185,8 @@ export interface TrackedApplication {
   auditReceiptId: string;
   actionReason?: string;
   tailoredBulletsCount: number;
+  applicationMode?: 'tailored' | 'direct_resume';
+  resumeLabel?: string;
   resumeDiffs: ResumeDiffItem[];
   screeningQuestions: ScreeningAnswer[];
   humanVerified: boolean;

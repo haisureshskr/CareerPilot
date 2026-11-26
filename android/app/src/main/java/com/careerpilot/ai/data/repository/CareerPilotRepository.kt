@@ -566,7 +566,8 @@ class CareerPilotRepository {
         "linkedinUrl" to linkedinUrl,
         "customQAs" to customQAs.map {
             mapOf("id" to it.id, "question" to it.question, "answer" to it.answer, "savedAt" to it.savedAt)
-        }
+        },
+        "notInterestedJobIds" to notInterestedJobIds.distinct().take(200)
     )
 
     private fun HiringTeamMember.toMap() = mapOf(
@@ -695,7 +696,8 @@ class CareerPilotRepository {
                 workAuthorization = vaultMap["workAuthorization"] as? String ?: "",
                 relocationPreference = vaultMap["relocationPreference"] as? String ?: "",
                 linkedinUrl = vaultMap["linkedinUrl"] as? String ?: "",
-                customQAs = customQAs
+                customQAs = customQAs,
+                notInterestedJobIds = (vaultMap["notInterestedJobIds"] as? List<String>).orEmpty()
             ),
             warrantyAccepted = doc.getBoolean("warrantyAccepted") ?: false,
             selectedTier = PricingTier.fromId(doc.getString("selectedTier") ?: "tier4"),

@@ -379,6 +379,135 @@ class CareerPilotViewModel(
         _uiState.update { it.copy(bannerMessage = "Added ${job.company} (${analysis.matchScore}% match) to Approval Queue.") }
     }
 
+    fun directApplyWithUploadedResume(job: JobListing) = launchGuarded("Preparing direct apply with uploaded resume...") {
+        val uid = requireNotNull(_uiState.value.user?.uid)
+        val state = _uiState.value
+        val ws = state.workspace
+        require(ws.profile.fullName.isNotBlank() || ws.profile.experience.isNotEmpty()) {
+            "Upload or fill in your Master Profile resume before applying directly."
+        }
+
+        val greenAnswers = buildList {
+            add(
+                ScreeningAnswer(
+                    id = "sq-direct-ctc",
+                    question = "Current & Expected CTC (INR)",
+                    answer = "Current: ${ws.qaVault.currentCtc.ifBlank { "Not set" }} | Expected: ${ws.qaVault.expectedCtc.ifBlank { "Not set" }}",
+                    confidence = "GREEN",
+                    sourceLabel = "Q&A Vault · Verified fact",
+                    reviewed = true
+                )
+            )
+            add(
+                ScreeningAnswer(
+                    id = "sq-direct-notice",
+                    question = "Notice Period (days)",
+                    answer = "${ws.qaVault.noticePeriodDays.ifBlank { "30" }} days",
+                    confidence = "GREEN",
+                    sourceLabel = "Q&A Vault · Verified fact",
+                    reviewed = true
+                )
+            )
+            add(
+                ScreeningAnswer(
+                    id = "sq-direct-auth",
+                    question = "Work Authorization & Relocation",
+                    answer = listOf(ws.qaVault.workAuthorization, ws.qaVault.relocationPreference)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" · ")
+                        .ifBlank { "Authorized to work in India" },
+                    confidence = "GREEN",
+                    sourceLabel = "Q&A Vault · Verified fact",
+                    reviewed = true
+                )
+            )
+            val li = ws.qaVault.linkedinUrl.ifBlank { ws.profile.linkedinUrl }
+            if (li.isNotBlank()) {
+                add(
+                    ScreeningAnswer(
+                        id = "sq-direct-li",
+                        question = "LinkedIn Profile URL",
+                        answer = li,
+                        confidence = "GREEN",
+                        sourceLabel = "Q&A Vault · Verified fact",
+                        reviewed = true
+                    )
+                )
+            }
+        }
+
+        val firstName = job.hiringTeam.name.split(" ").firstOrNull().orEmpty().ifBlank { "there" }
+        val topSkills = ws.profile.skills.take(3).joinToString(", ")
+        val note = "Hi $firstName — applying for ${job.role} at ${job.company} with my base resume." +
+            if (topSkills.isNotBlank()) " Background in $topSkills." else ""
+
+        val draft = ApplicationRecord(
+            id = "app_direct_${job.id}_${System.currentTimeMillis()}",
+            ownerId = uid,
+            jobId = job.id,
+            company = job.company,
+            role = job.role,
+            location = job.location,
+            salary = job.salary,
+            workMode = job.workMode,
+            portalType = job.portalType,
+            portalComplexity = job.portalComplexity,
+            jobUrl = job.jobUrl,
+            matchScore = job.matchScore,
+            status = ApplicationStatus.PENDING_APPROVAL,
+            hiringTeam = job.hiringTeam,
+            linkedinNote = note.take(275),
+            resumeDiffs = emptyList(),
+            screeningQuestions = greenAnswers
+        )
+
+        if (job.id in ws.qaVault.notInterestedJobIds) {
+            val cleanedVault = ws.qaVault.copy(
+                notInterestedJobIds = ws.qaVault.notInterestedJobIds.filterNot { it == job.id }
+            )
+            repo.saveProfileAndVault(uid, ws.profile, cleanedVault, ws.warrantyAccepted)
+        }
+
+        repo.upsertJobAndQueueIfQualified(uid, job, draft)
+        if (ws.warrantyAccepted && state.guardrails.canSubmitNow) {
+            _uiState.update {
+                it.copy(
+                    activeWebViewApp = draft,
+                    activeWebViewAnswers = greenAnswers,
+                    bannerMessage = "Opened ${job.company} directly with your uploaded base resume (0 AI edits)."
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Prepared ${job.company} with your uploaded base resume in Approval Queue (review warranty/guardrails before submitting)."
+                )
+            }
+        }
+    }
+
+    fun toggleJobNotInterested(jobId: String, notInterested: Boolean) =
+        launchGuarded(if (notInterested) "Flagging job as Not Interested..." else "Restoring job posting...") {
+            val uid = requireNotNull(_uiState.value.user?.uid)
+            val ws = _uiState.value.workspace
+            val updatedIds = if (notInterested) {
+                (ws.qaVault.notInterestedJobIds + jobId).distinct()
+            } else {
+                ws.qaVault.notInterestedJobIds.filterNot { it == jobId }
+            }
+            val updatedVault = ws.qaVault.copy(notInterestedJobIds = updatedIds)
+            repo.saveProfileAndVault(uid, ws.profile, updatedVault, ws.warrantyAccepted)
+            _uiState.update {
+                it.copy(
+                    bannerMessage = if (notInterested) {
+                        "Posting flagged as Not Interested and hidden from active discovery."
+                    } else {
+                        "Posting restored to active discovery."
+                    }
+                )
+            }
+        }
+
     fun saveEditToVault(appId: String, answers: List<ScreeningAnswer>) =
         launchGuarded("Syncing reviewed answers to Q&A Vault...") {
             val uid = requireNotNull(_uiState.value.user?.uid)
@@ -540,6 +669,11 @@ class CareerPilotViewModel(
             try {
                 block()
             } catch (err: Exception) {
+                com.careerpilot.ai.util.CrashLogger.logHandledError(
+                    contextTag = "viewmodel.launchGuarded",
+                    throwable = err,
+                    extras = mapOf("operation" to busyLabel)
+                )
                 _uiState.update { it.copy(errorMessage = err.message ?: "Operation failed.") }
             } finally {
                 _uiState.update { it.copy(busyMessage = null) }

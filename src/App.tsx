@@ -31,6 +31,7 @@ import type {
   PortalType,
   PricingTierId,
   QAVault,
+  QueueItem,
   WorkMode,
 } from './types';
 import { ProfileView } from './components/ProfileView';
@@ -41,6 +42,7 @@ import { PricingSettingsView } from './components/PricingSettingsView';
 import { PrivacyOptOutView } from './components/PrivacyOptOutView';
 import { DiagnosticsView } from './components/DiagnosticsView';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAControls';
+import { addBreadcrumb, logAppError } from './utils/crashLogger';
 
 type RoutePath =
   | '/profile'
@@ -75,6 +77,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [liveCooldown, setLiveCooldown] = useState<number>(0);
+  const [pendingDirectApplyQueueId, setPendingDirectApplyQueueId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -86,6 +89,7 @@ export default function App() {
   const navigate = useCallback((path: string) => {
     const next = normalizeRoute(path);
     setRoute(next);
+    addBreadcrumb(`navigate:${next}`);
     if (typeof window !== 'undefined' && window.location.pathname !== next) {
       window.history.pushState({}, '', next);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -131,6 +135,7 @@ export default function App() {
       } catch {
         // ignore cache error
       }
+      logAppError('app.fetchState', err);
       setLoadError(err instanceof Error ? err.message : 'Failed to connect to server.');
     } finally {
       setLoading(false);
@@ -183,6 +188,7 @@ export default function App() {
     resumeText?: string;
     fileBase64?: string;
     mimeType?: string;
+    fileName?: string;
   }): Promise<{ extractedLinkedInUrl?: string | null }> => {
     const res = await fetch('/api/profile/parse', {
       method: 'POST',
@@ -255,6 +261,38 @@ export default function App() {
     if (!res.ok) throw new Error(data.error || 'Failed to analyze job.');
     syncState(data.state);
     return { queued: Boolean(data.queued), job: data.job };
+  };
+
+  const handleDirectApplyJob = async (
+    jobId: string
+  ): Promise<{ queueItem: QueueItem; job: JobListing }> => {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/direct-apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to prepare direct application.');
+    syncState(data.state);
+    if (data.queueItem?.id) {
+      setPendingDirectApplyQueueId(data.queueItem.id);
+      navigate('/queue');
+    }
+    return { queueItem: data.queueItem as QueueItem, job: data.job as JobListing };
+  };
+
+  const handleToggleNotInterested = async (
+    jobId: string,
+    notInterested: boolean
+  ): Promise<{ job: JobListing; notInterested: boolean }> => {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/not-interested`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notInterested }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update job interest flag.');
+    syncState(data.state);
+    return { job: data.job as JobListing, notInterested: Boolean(data.notInterested) };
   };
 
   const handleSaveToVault = async (
@@ -368,7 +406,7 @@ export default function App() {
         );
       }
     } catch (err) {
-      console.error('Google Sign-In failed:', err);
+      logAppError('auth.googleSignIn', err);
     } finally {
       setAuthBusy(false);
     }
@@ -650,6 +688,8 @@ export default function App() {
                   onSearchBackendJobs={handleSearchBackendJobs}
                   onDiscoverJobsFromResume={handleDiscoverJobsFromResume}
                   onAnalyzeJob={handleAnalyzeJob}
+                  onDirectApplyJob={handleDirectApplyJob}
+                  onToggleNotInterested={handleToggleNotInterested}
                   onNavigate={navigate}
                 />
               )}
@@ -664,6 +704,8 @@ export default function App() {
                   consentAccepted={appState.consentAccepted}
                   guardrails={appState.guardrails}
                   liveCooldown={liveCooldown}
+                  autoOpenSandboxQueueId={pendingDirectApplyQueueId}
+                  onConsumeAutoOpenSandbox={() => setPendingDirectApplyQueueId(null)}
                   onSaveToVault={handleSaveToVault}
                   onApproveSubmit={handleApproveSubmit}
                   onSkip={handleSkipQueue}

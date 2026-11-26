@@ -213,7 +213,10 @@ fun CareerPilotRoot(vm: CareerPilotViewModel = viewModel()) {
                 destinations.forEachIndexed { idx, dest ->
                     NavigationBarItem(
                         selected = selectedTab == idx,
-                        onClick = { selectedTab = idx },
+                        onClick = {
+                            selectedTab = idx
+                            com.careerpilot.ai.util.CrashLogger.logBreadcrumb("Navigation", "Tab=${dest.label}")
+                        },
                         icon = { Icon(dest.icon, contentDescription = dest.label) },
                         label = { Text(dest.label) }
                     )
@@ -242,6 +245,7 @@ fun CareerPilotRoot(vm: CareerPilotViewModel = viewModel()) {
                     1 -> DiscoverScreen(
                         jobs = state.searchedJobs ?: state.jobs,
                         masterProfile = state.workspace.profile,
+                        notInterestedJobIds = state.workspace.qaVault.notInterestedJobIds.toSet(),
                         onSearchBackendJobs = { query, country, market, mode, portal, minScore ->
                             vm.searchJobsInBackend(query, country, market, mode, portal, minScore)
                         },
@@ -249,6 +253,8 @@ fun CareerPilotRoot(vm: CareerPilotViewModel = viewModel()) {
                             vm.discoverJobsFromResume(query, country, market, mode, portal, minScore)
                         },
                         onTailorJob = { vm.tailorExistingJob(it) },
+                        onDirectApplyWithUploadedResume = { vm.directApplyWithUploadedResume(it) },
+                        onToggleNotInterested = { jobId, flag -> vm.toggleJobNotInterested(jobId, flag) },
                         onQuickTailorRawJd = { jd, recruiter, company, portal ->
                             vm.quickTailorRawJd(jd, recruiter, company, portal)
                         }

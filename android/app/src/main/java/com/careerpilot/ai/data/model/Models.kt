@@ -48,7 +48,8 @@ data class QAVault(
     val workAuthorization: String = "",
     val relocationPreference: String = "",
     val linkedinUrl: String = "",
-    val customQAs: List<SavedCustomQA> = emptyList()
+    val customQAs: List<SavedCustomQA> = emptyList(),
+    val notInterestedJobIds: List<String> = emptyList()
 )
 
 @Serializable

@@ -15,8 +15,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,9 +57,12 @@ import kotlin.math.roundToInt
 fun DiscoverScreen(
     jobs: List<JobListing>,
     masterProfile: MasterProfile,
+    notInterestedJobIds: Set<String> = emptySet(),
     onSearchBackendJobs: (query: String, country: String, market: String, workMode: String, portalType: String, minMatchScore: Int) -> Unit,
     onDiscoverFromResume: (query: String, country: String, market: String, workMode: String, portalType: String, minMatchScore: Int) -> Unit,
     onTailorJob: (JobListing) -> Unit,
+    onDirectApplyWithUploadedResume: (JobListing) -> Unit,
+    onToggleNotInterested: (jobId: String, notInterested: Boolean) -> Unit,
     onQuickTailorRawJd: (rawJd: String, recruiterName: String, companyHint: String, portalType: String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -65,6 +72,18 @@ fun DiscoverScreen(
     var selectedPortal by remember { mutableStateOf("All") }
     var selectedMarket by remember { mutableStateOf("India") }
     var minMatchScore by remember { mutableFloatStateOf(0f) }
+    var showNotInterestedOnly by remember { mutableStateOf(false) }
+
+    val visibleJobs = remember(jobs, notInterestedJobIds, showNotInterestedOnly) {
+        if (showNotInterestedOnly) {
+            jobs.filter { it.id in notInterestedJobIds }
+        } else {
+            jobs.filterNot { it.id in notInterestedJobIds }
+        }
+    }
+    val flaggedCount = remember(jobs, notInterestedJobIds) {
+        jobs.count { it.id in notInterestedJobIds }
+    }
 
     var showQuickTailorSheet by remember { mutableStateOf(false) }
     var rawJdInput by remember { mutableStateOf("") }
@@ -249,6 +268,11 @@ fun DiscoverScreen(
                             label = { Text(portal) }
                         )
                     }
+                    FilterChip(
+                        selected = showNotInterestedOnly,
+                        onClick = { showNotInterestedOnly = !showNotInterestedOnly },
+                        label = { Text("Not Interested ($flaggedCount)") }
+                    )
                 }
             }
 
@@ -270,7 +294,7 @@ fun DiscoverScreen(
                 }
             }
 
-            if (jobs.isEmpty()) {
+            if (visibleJobs.isEmpty()) {
                 item {
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
@@ -279,33 +303,42 @@ fun DiscoverScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = if (selectedCountry != "All") "No backend jobs in $selectedCountry yet" else "No backend jobs match current filters",
+                                text = if (showNotInterestedOnly) "No postings flagged as Not Interested"
+                                else if (selectedCountry != "All") "No backend jobs in $selectedCountry yet"
+                                else "No backend jobs match current filters",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
-                            OutlinedButton(
-                                onClick = {
-                                    onDiscoverFromResume(
-                                        searchQuery,
-                                        selectedCountry,
-                                        selectedMarket,
-                                        selectedWorkMode,
-                                        selectedPortal,
-                                        0
+                            if (showNotInterestedOnly) {
+                                OutlinedButton(onClick = { showNotInterestedOnly = false }) {
+                                    Text("Back to Active Jobs")
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        onDiscoverFromResume(
+                                            searchQuery,
+                                            selectedCountry,
+                                            selectedMarket,
+                                            selectedWorkMode,
+                                            selectedPortal,
+                                            0
+                                        )
+                                    }
+                                ) {
+                                    Text(
+                                        if (selectedCountry != "All") "Discover Jobs in $selectedCountry"
+                                        else "Run Live Resume Discovery"
                                     )
                                 }
-                            ) {
-                                Text(
-                                    if (selectedCountry != "All") "Discover Jobs in $selectedCountry"
-                                    else "Run Live Resume Discovery"
-                                )
                             }
                         }
                     }
                 }
             }
 
-            items(jobs, key = { it.id }) { job ->
+            items(visibleJobs, key = { it.id }) { job ->
+                val isFlagged = job.id in notInterestedJobIds
                 ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -318,9 +351,10 @@ fun DiscoverScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "${job.company} · ${job.portalType} · ${job.portalComplexity}",
+                                    text = "${job.company} · ${job.portalType} · ${job.portalComplexity}" +
+                                        if (isFlagged) " · Not Interested" else "",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (isFlagged) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = job.role,
@@ -355,13 +389,44 @@ fun DiscoverScreen(
                             )
                         }
 
-                        Button(
-                            onClick = { onTailorJob(job) },
-                            modifier = Modifier.fillMaxWidth()
+                        if (!isFlagged) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onTailorJob(job) },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Outlined.AutoAwesome, contentDescription = null)
+                                    Spacer(modifier = Modifier.padding(horizontal = 3.dp))
+                                    Text("Tailor & Queue")
+                                }
+                                Button(
+                                    onClick = { onDirectApplyWithUploadedResume(job) },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Outlined.Description, contentDescription = null)
+                                    Spacer(modifier = Modifier.padding(horizontal = 3.dp))
+                                    Text("Apply Direct")
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Icon(Icons.Outlined.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                            Text("Score, Tailor & Queue for Approval")
+                            TextButton(
+                                onClick = { onToggleNotInterested(job.id, !isFlagged) }
+                            ) {
+                                Icon(
+                                    imageVector = if (isFlagged) Icons.Outlined.Restore else Icons.Outlined.Block,
+                                    contentDescription = null
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 3.dp))
+                                Text(if (isFlagged) "Restore Posting" else "Not Interested")
+                            }
                         }
                     }
                 }

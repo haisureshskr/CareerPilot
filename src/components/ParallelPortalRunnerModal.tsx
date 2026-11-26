@@ -82,7 +82,9 @@ function buildTailoredResumeText(profile: MasterProfile, item: QueueItem): strin
   }
 
   const lines: string[] = [
-    `${profile.fullName || 'Candidate'} — Tailored Resume for ${item.company} (${item.role})`,
+    item.applicationMode === 'direct_resume'
+      ? `${profile.fullName || 'Candidate'} — Uploaded Base Resume for ${item.company} (${item.role})`
+      : `${profile.fullName || 'Candidate'} — Tailored Resume for ${item.company} (${item.role})`,
     [profile.headline, profile.location, profile.email, profile.phone].filter(Boolean).join(' | '),
     '',
     'SUMMARY',

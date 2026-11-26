@@ -24,6 +24,14 @@ import type {
   TrackedApplication,
   WorkMode,
 } from './src/types.ts';
+import {
+  expressErrorMiddleware,
+  ingestClientCrashLog,
+  installProcessCrashHandlers,
+  logServerError,
+} from './serverCrashLogger.ts';
+
+installProcessCrashHandlers();
 
 const PORT = Number(process.env.PORT) || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -650,10 +658,12 @@ function filterAndRankBackendJobs(
     workMode: string;
     portalType: string;
     minMatch: number;
+    notInterestedMode?: 'hide' | 'only' | 'all';
   }
 ): JobListing[] {
   const q = filters.query.trim().toLowerCase();
   const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+  const notInterestedMode = filters.notInterestedMode || 'hide';
 
   const filtered = allJobs
     .map((job) => ({
@@ -661,6 +671,8 @@ function filterAndRankBackendJobs(
       country: inferJobCountry(job.location, job.market, job.salary, job.country),
     }))
     .filter((job) => {
+      if (notInterestedMode === 'hide' && job.notInterested) return false;
+      if (notInterestedMode === 'only' && !job.notInterested) return false;
       if (!matchesCountryFilter(job, filters.country)) return false;
       // Other regions commented out — focusing on India first
       // if (filters.country === 'All' && filters.market !== 'All' && job.market !== filters.market) return false;
@@ -1346,18 +1358,34 @@ INSTRUCTIONS:
   // Deterministic strict India post-filter: never leak non-India jobs
   const discoveredJobs = mappedJobs.filter((job) => matchesCountryFilter(job, countryFilter));
 
+  // Preserve Not Interested flags across fresh live searches so dismissed postings stay flagged
+  const existingNotInterestedByKey = new Map<string, string>();
+  for (const prev of store.jobs) {
+    if (prev.notInterested) {
+      const k = `${prev.company.toLowerCase()}::${prev.role.toLowerCase()}`;
+      existingNotInterestedByKey.set(k, prev.notInterestedAt || nowIso);
+    }
+  }
+
   const currentProfileHash = computeProfileHash(profile, vault);
   const customJobs = store.jobs.filter((j) => j.isCustom && matchesCountryFilter(j, countryFilter));
+  const flaggedJobs = store.jobs.filter((j) => j.notInterested && matchesCountryFilter(j, countryFilter));
   const sameResume = store.lastDiscoveredProfileHash === currentProfileHash;
   const baseJobsToKeep = sameResume
     ? store.jobs.filter((j) => matchesCountryFilter(j, countryFilter))
-    : customJobs;
+    : [...customJobs, ...flaggedJobs];
 
   const deduped = new Map<string, JobListing>();
   for (const job of [...discoveredJobs, ...baseJobsToKeep]) {
     const key = `${job.company.toLowerCase()}::${job.role.toLowerCase()}`;
     if (!deduped.has(key)) {
-      deduped.set(key, job);
+      const flaggedAt = existingNotInterestedByKey.get(key);
+      deduped.set(
+        key,
+        flaggedAt
+          ? { ...job, notInterested: true, notInterestedAt: flaggedAt }
+          : job
+      );
     }
     if (deduped.size >= 48) break;
   }
@@ -2089,7 +2117,7 @@ function saveStore(store: ServerStore): void {
     fs.writeFileSync(tmpPath, JSON.stringify(store, null, 2), 'utf-8');
     fs.renameSync(tmpPath, STORE_PATH);
   } catch (err) {
-    console.error('Failed to persist store:', err);
+    logServerError({ context: 'store.saveStore', error: err });
   }
 }
 
@@ -2172,10 +2200,11 @@ async function startServer() {
   // 2. Parse resume (PDF base64 or plain text) via Gemini API
   app.post('/api/profile/parse', async (req, res) => {
     try {
-      const { resumeText, fileBase64, mimeType } = req.body as {
+      const { resumeText, fileBase64, mimeType, fileName } = req.body as {
         resumeText?: string;
         fileBase64?: string;
         mimeType?: string;
+        fileName?: string;
       };
 
       if (!resumeText?.trim() && !fileBase64?.trim()) {
@@ -2333,6 +2362,12 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
             }))
           : [],
         rawResumeText: resumeText?.slice(0, 30000),
+        uploadedResumeFileName:
+          typeof fileName === 'string' && fileName.trim()
+            ? fileName.trim().slice(0, 160)
+            : fileBase64
+              ? 'Uploaded Resume.pdf'
+              : undefined,
         lastParsedAt: new Date().toISOString(),
       };
 
@@ -2360,9 +2395,9 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
         state: getClientPayload(),
       });
     } catch (err) {
-      console.error('Resume parse error:', err);
+      const eventId = logServerError({ context: 'api.profile.parse', error: err, req, statusCode: 500 });
       const message = err instanceof Error ? err.message : 'Failed to parse resume with Gemini API.';
-      return res.status(500).json({ error: message });
+      return res.status(500).json({ error: message, eventId });
     }
   });
 
@@ -2421,6 +2456,7 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
       workMode?: unknown;
       portalType?: unknown;
       minMatch?: unknown;
+      notInterestedMode?: unknown;
     };
 
     const queryStr = typeof body.query === 'string' ? body.query.trim().slice(0, 200) : '';
@@ -2449,6 +2485,10 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
       typeof body.minMatch === 'number' && Number.isFinite(body.minMatch)
         ? Math.max(0, Math.min(100, Math.round(body.minMatch)))
         : 0;
+    const notInterestedMode: 'hide' | 'only' | 'all' =
+      body.notInterestedMode === 'only' || body.notInterestedMode === 'all'
+        ? body.notInterestedMode
+        : 'hide';
 
     // Ensure every backend job reflects current resume match if resume changed
     const currentHash = computeProfileHash(store.masterProfile, store.qaVault);
@@ -2463,12 +2503,16 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
       workMode,
       portalType,
       minMatch,
+      notInterestedMode,
     });
 
-    const indiaCatalogCount = store.jobs.filter((job) => matchesCountryFilter(job, 'India')).length;
+    const indiaJobs = store.jobs.filter((job) => matchesCountryFilter(job, 'India'));
+    const notInterestedCount = indiaJobs.filter((job) => Boolean(job.notInterested)).length;
+    const activeIndiaCatalogCount = indiaJobs.length - notInterestedCount;
     const payload: BackendJobSearchResponse = {
       jobs: filtered,
-      totalCatalogCount: indiaCatalogCount,
+      totalCatalogCount: notInterestedMode === 'only' ? notInterestedCount : activeIndiaCatalogCount,
+      notInterestedCount,
       resumeProfileSummary: extractResumeSummary(store.masterProfile),
       groundingSources: store.groundingSources ?? [],
       lastDiscoveredAt: store.lastDiscoveredAt ?? null,
@@ -2488,6 +2532,7 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
         workMode?: unknown;
         portalType?: unknown;
         minMatch?: unknown;
+        notInterestedMode?: unknown;
       };
 
       const queryStr = typeof body.query === 'string' ? body.query.trim().slice(0, 200) : '';
@@ -2516,6 +2561,10 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
         typeof body.minMatch === 'number' && Number.isFinite(body.minMatch)
           ? Math.max(0, Math.min(100, Math.round(body.minMatch)))
           : 0;
+      const notInterestedMode: 'hide' | 'only' | 'all' =
+        body.notInterestedMode === 'only' || body.notInterestedMode === 'all'
+          ? body.notInterestedMode
+          : 'hide';
 
       const { discoveredJobs, groundingSources } = await discoverJobsFromResumeInBackend({
         query: queryStr,
@@ -2532,12 +2581,16 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
         workMode,
         portalType,
         minMatch,
+        notInterestedMode,
       });
 
-      const indiaCatalogCount = store.jobs.filter((job) => matchesCountryFilter(job, 'India')).length;
+      const indiaJobs = store.jobs.filter((job) => matchesCountryFilter(job, 'India'));
+      const notInterestedCount = indiaJobs.filter((job) => Boolean(job.notInterested)).length;
+      const activeIndiaCatalogCount = indiaJobs.length - notInterestedCount;
       return res.json({
         jobs: filtered,
-        totalCatalogCount: indiaCatalogCount,
+        totalCatalogCount: notInterestedMode === 'only' ? notInterestedCount : activeIndiaCatalogCount,
+        notInterestedCount,
         discoveredCount: discoveredJobs.length,
         resumeProfileSummary: extractResumeSummary(store.masterProfile),
         groundingSources,
@@ -2546,11 +2599,11 @@ ${resumeText ? `\n--- RESUME TEXT ---\n${resumeText.slice(0, 30000)}` : ''}`,
         state: getClientPayload(),
       });
     } catch (err) {
-      console.error('Backend resume job discovery error:', err);
       const message =
         err instanceof Error ? err.message : 'Failed to search live jobs for your resume on the backend.';
       const status = message.includes('GEMINI_API_KEY') ? 503 : message.includes('Master Profile') ? 400 : 500;
-      return res.status(status).json({ error: message });
+      const eventId = logServerError({ context: 'api.jobs.discover', error: err, req, statusCode: status });
+      return res.status(status).json({ error: message, eventId });
     }
   });
 
@@ -2741,6 +2794,8 @@ TASKS:
           ? result.missingKeywords.map(String).slice(0, 6)
           : [],
         analyzedAt: new Date().toISOString(),
+        notInterested: false,
+        notInterestedAt: undefined,
       };
 
       const existingIdx = store.jobs.findIndex((j) => j.id === updatedJob.id);
@@ -2834,6 +2889,8 @@ TASKS:
           screeningQuestions: [...amberAnswers, ...greenAnswers],
           createdAt: new Date().toISOString(),
           status: 'pending',
+          applicationMode: 'tailored',
+          resumeLabel: 'AI-Tailored Resume (Truthfulness Lock)',
         };
 
         // Replace existing pending queue card for the same job if present
@@ -2849,10 +2906,156 @@ TASKS:
         state: getClientPayload(),
       });
     } catch (err) {
-      console.error('Job analyze error:', err);
+      const eventId = logServerError({ context: 'api.jobs.analyze', error: err, req, statusCode: 500 });
       const message = err instanceof Error ? err.message : 'Failed to analyze job with Gemini API.';
-      return res.status(500).json({ error: message });
+      return res.status(500).json({ error: message, eventId });
     }
+  });
+
+  // 4B. Apply Directly with Uploaded Base Resume (bypasses AI resume rewrite, respects HITL Approval Gate)
+  app.post('/api/jobs/:jobId/direct-apply', (req, res) => {
+    const { jobId } = req.params;
+    const jobIdx = store.jobs.findIndex((j) => j.id === jobId);
+    if (jobIdx < 0) {
+      return res.status(404).json({ error: 'Job listing not found.' });
+    }
+
+    if (!store.masterProfile.fullName && store.masterProfile.experience.length === 0) {
+      return res.status(400).json({
+        error: 'Please upload or complete your Master Profile before applying with your uploaded resume.',
+      });
+    }
+
+    const targetJob: JobListing = {
+      ...store.jobs[jobIdx],
+      notInterested: false,
+      notInterestedAt: undefined,
+    };
+    store.jobs[jobIdx] = targetJob;
+
+    const now = Date.now();
+    const resumeLabel =
+      store.masterProfile.uploadedResumeFileName ||
+      (store.masterProfile.rawResumeText
+        ? 'Uploaded Base Resume (Master Profile)'
+        : 'Base Master Profile Resume');
+
+    const greenAnswers: ScreeningAnswer[] = [
+      {
+        id: `sq-direct-ctc-${now}`,
+        question: 'Current & Expected CTC (INR)',
+        answer: `Current: ${store.qaVault.currentCtc || 'Not set'} | Expected: ${store.qaVault.expectedCtc || 'Not set'}`,
+        confidence: 'GREEN',
+        sourceLabel: 'Q&A Vault · Verified fact',
+        vaultField: 'expectedCtc',
+        reviewed: true,
+      },
+      {
+        id: `sq-direct-notice-${now}`,
+        question: 'Notice Period / Availability',
+        answer: store.qaVault.noticePeriodDays
+          ? `${store.qaVault.noticePeriodDays} days`
+          : 'Immediate / Negotiable',
+        confidence: 'GREEN',
+        sourceLabel: 'Q&A Vault · Verified fact',
+        vaultField: 'noticePeriodDays',
+        reviewed: true,
+      },
+      {
+        id: `sq-direct-auth-${now}`,
+        question: 'Work Authorization & Relocation',
+        answer:
+          [store.qaVault.workAuthorization, store.qaVault.relocationPreference]
+            .filter(Boolean)
+            .join(' · ') || 'Authorized to work in India',
+        confidence: 'GREEN',
+        sourceLabel: 'Q&A Vault · Verified fact',
+        vaultField: 'workAuthorization',
+        reviewed: true,
+      },
+    ];
+
+    const linkedInVal = store.qaVault.linkedinUrl || store.masterProfile.linkedinUrl || '';
+    if (linkedInVal) {
+      greenAnswers.push({
+        id: `sq-direct-li-${now}`,
+        question: 'LinkedIn Profile URL',
+        answer: linkedInVal,
+        confidence: 'GREEN',
+        sourceLabel: 'Q&A Vault · Verified fact',
+        vaultField: 'linkedinUrl',
+        reviewed: true,
+      });
+    }
+
+    const firstName = (targetJob.hiringTeam.name || 'Hiring Team').split(/\s+/)[0] || 'there';
+    const topSkills = store.masterProfile.skills.slice(0, 3).join(', ');
+    const groundedNote = `Hi ${firstName} — I'm applying for ${targetJob.role} at ${targetJob.company} with my base resume.${
+      topSkills ? ` Background in ${topSkills}.` : ''
+    } Would love to connect!`.slice(0, 275);
+
+    const queuedItem: QueueItem = {
+      id: `q-direct-${targetJob.id}-${now}`,
+      jobId: targetJob.id,
+      company: targetJob.company,
+      role: targetJob.role,
+      location: targetJob.location,
+      salary: targetJob.salary,
+      workMode: targetJob.workMode,
+      portalType: targetJob.portalType,
+      portalComplexity: targetJob.portalComplexity,
+      jobUrl: targetJob.jobUrl,
+      matchScore: targetJob.matchScore,
+      hiringTeam: targetJob.hiringTeam,
+      linkedinNote: groundedNote,
+      resumeDiffs: [],
+      screeningQuestions: greenAnswers,
+      createdAt: new Date(now).toISOString(),
+      status: 'pending',
+      applicationMode: 'direct_resume',
+      resumeLabel,
+    };
+
+    store.queue = [queuedItem, ...store.queue.filter((item) => item.jobId !== targetJob.id)];
+    saveStore(store);
+
+    return res.json({
+      job: targetJob,
+      queued: true,
+      queueItem: queuedItem,
+      state: getClientPayload(),
+    });
+  });
+
+  // 4C. Flag or Restore a Job Posting as "Not Interested"
+  app.post('/api/jobs/:jobId/not-interested', (req, res) => {
+    const { jobId } = req.params;
+    const jobIdx = store.jobs.findIndex((j) => j.id === jobId);
+    if (jobIdx < 0) {
+      return res.status(404).json({ error: 'Job listing not found.' });
+    }
+
+    const body = (req.body || {}) as { notInterested?: unknown };
+    const flag = typeof body.notInterested === 'boolean' ? body.notInterested : true;
+
+    const updatedJob: JobListing = {
+      ...store.jobs[jobIdx],
+      notInterested: flag,
+      notInterestedAt: flag ? new Date().toISOString() : undefined,
+    };
+    store.jobs[jobIdx] = updatedJob;
+
+    // Remove pending item from Approval Queue if candidate marked the posting Not Interested
+    if (flag) {
+      store.queue = store.queue.filter((item) => item.jobId !== jobId);
+    }
+
+    saveStore(store);
+    return res.json({
+      job: updatedJob,
+      notInterested: flag,
+      state: getClientPayload(),
+    });
   });
 
   // 5. Edit & Save Amber Screening Answer to Q&A Vault
@@ -2975,6 +3178,8 @@ TASKS:
           ? actionReason || 'Paused at simulated CAPTCHA / OTP verification — requires manual completion.'
           : undefined,
       tailoredBulletsCount: queueItem.resumeDiffs.length,
+      applicationMode: queueItem.applicationMode || 'tailored',
+      resumeLabel: queueItem.resumeLabel,
       resumeDiffs: queueItem.resumeDiffs,
       screeningQuestions: finalQuestions,
       humanVerified: true,
@@ -3012,6 +3217,8 @@ TASKS:
       timestamp: new Date(now).toISOString(),
       auditReceiptId: generateReceiptId(),
       tailoredBulletsCount: queueItem.resumeDiffs.length,
+      applicationMode: queueItem.applicationMode || 'tailored',
+      resumeLabel: queueItem.resumeLabel,
       resumeDiffs: queueItem.resumeDiffs,
       screeningQuestions: queueItem.screeningQuestions,
       humanVerified: true,
@@ -3214,8 +3421,10 @@ TASKS:
         parsed,
       });
     } catch (err) {
+      const eventId = logServerError({ context: 'api.diagnostics.gemini', error: err, req: _req, statusCode: 500 });
       return res.status(500).json({
         ok: false,
+        eventId,
         error: err instanceof Error ? err.message : 'Gemini connectivity probe failed.',
         stack: err instanceof Error ? err.stack : undefined,
       });
@@ -3239,6 +3448,9 @@ TASKS:
     });
   });
 
+  // 16. Client Crash & Error Log Ingestion (captures device model, OS, browser, date, stack trace)
+  app.post('/api/logs/client', ingestClientCrashLog);
+
   if (!IS_PROD) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -3254,12 +3466,15 @@ TASKS:
     });
   }
 
+  // Global Express error handler — logs unhandled route exceptions with device, date & stack
+  app.use(expressErrorMiddleware);
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`CareerPilot AI server running on http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('Failed to start CareerPilot AI server:', err);
+  logServerError({ level: 'fatal', context: 'server.startup', error: err });
   process.exit(1);
 });

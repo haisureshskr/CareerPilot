@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
+  Ban,
   ExternalLink,
+  FileCheck2,
   FileText,
   Globe,
   Loader2,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   SlidersHorizontal,
   Sparkles,
@@ -30,6 +33,7 @@ export interface BackendSearchFilters {
   workMode: 'All' | WorkMode;
   portalType: 'All' | PortalType;
   minMatch: number;
+  notInterestedMode?: 'hide' | 'only' | 'all';
 }
 
 interface DiscoverViewProps {
@@ -55,6 +59,11 @@ interface DiscoverViewProps {
     };
     forceQueue?: boolean;
   }) => Promise<{ queued: boolean; job: JobListing }>;
+  onDirectApplyJob: (jobId: string) => Promise<{ queueItem: QueueItem; job: JobListing }>;
+  onToggleNotInterested: (
+    jobId: string,
+    notInterested: boolean
+  ) => Promise<{ job: JobListing; notInterested: boolean }>;
   onNavigate: (path: string) => void;
 }
 
@@ -95,6 +104,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   onSearchBackendJobs,
   onDiscoverJobsFromResume,
   onAnalyzeJob,
+  onDirectApplyJob,
+  onToggleNotInterested,
   onNavigate,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,10 +114,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   const [workModeFilter, setWorkModeFilter] = useState<'All' | WorkMode>('All');
   const [portalFilter, setPortalFilter] = useState<'All' | PortalType>('All');
   const [minMatch, setMinMatch] = useState<number>(0);
+  const [notInterestedMode, setNotInterestedMode] = useState<'hide' | 'only'>('hide');
 
   // Backend search state — all searching/filtering runs on the Express backend
   const [backendJobs, setBackendJobs] = useState<JobListing[]>(jobs);
   const [totalCatalogCount, setTotalCatalogCount] = useState<number>(jobs.length);
+  const [notInterestedCount, setNotInterestedCount] = useState<number>(
+    jobs.filter((j) => Boolean(j.notInterested)).length
+  );
   const [groundingSources, setGroundingSources] = useState<GroundingSource[]>([]);
   const [lastDiscoveredAt, setLastDiscoveredAt] = useState<string | null>(null);
   const [resumeSummary, setResumeSummary] = useState<
@@ -127,10 +142,23 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   const [customDescription, setCustomDescription] = useState('');
 
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [directApplyingId, setDirectApplyingId] = useState<string | null>(null);
+  const [flaggingId, setFlaggingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    text: string;
+    undoJobId?: string;
+    showQueueLink?: boolean;
+  } | null>(null);
   const requestSeqRef = useRef(0);
 
-  const queuedJobIds = useMemo(() => new Set(queue.map((q) => q.jobId)), [queue]);
+  const queuedItemByJobId = useMemo(() => {
+    const map = new Map<string, QueueItem>();
+    for (const q of queue) {
+      map.set(q.jobId, q);
+    }
+    return map;
+  }, [queue]);
 
   const handleCountryChange = (nextCountry: CountryFilter) => {
     setCountryFilter(nextCountry);
@@ -168,8 +196,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       workMode: workModeFilter,
       portalType: portalFilter,
       minMatch,
+      notInterestedMode,
     }),
-    [searchQuery, countryFilter, marketFilter, workModeFilter, portalFilter, minMatch]
+    [searchQuery, countryFilter, marketFilter, workModeFilter, portalFilter, minMatch, notInterestedMode]
   );
 
   const runBackendCatalogSearch = useCallback(
@@ -181,6 +210,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         if (seq !== requestSeqRef.current) return;
         setBackendJobs(result.jobs);
         setTotalCatalogCount(result.totalCatalogCount);
+        setNotInterestedCount(result.notInterestedCount ?? 0);
         setResumeSummary(result.resumeProfileSummary);
         setGroundingSources(result.groundingSources || []);
         setLastDiscoveredAt(result.lastDiscoveredAt);
@@ -217,6 +247,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       if (seq !== requestSeqRef.current) return;
       setBackendJobs(result.jobs);
       setTotalCatalogCount(result.totalCatalogCount);
+      setNotInterestedCount(result.notInterestedCount ?? 0);
       setResumeSummary(result.resumeProfileSummary);
       setGroundingSources(result.groundingSources || []);
       setLastDiscoveredAt(result.lastDiscoveredAt);
@@ -247,6 +278,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         text: result.queued
           ? `${result.job.company} scored ${result.job.matchScore}% ATS match and was added to your Human Approval Queue.`
           : `${result.job.company} scored ${result.job.matchScore}% ATS match (below the 75% auto-queue threshold).`,
+        showQueueLink: result.queued,
       });
     } catch (err) {
       setFeedback({
@@ -255,6 +287,44 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       });
     } finally {
       setAnalyzingId(null);
+    }
+  };
+
+  const handleDirectApply = async (job: JobListing) => {
+    setDirectApplyingId(job.id);
+    setFeedback(null);
+    try {
+      await onDirectApplyJob(job.id);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to launch direct apply with uploaded resume.',
+      });
+    } finally {
+      setDirectApplyingId(null);
+    }
+  };
+
+  const handleNotInterestedToggle = async (job: JobListing, markNotInterested: boolean) => {
+    setFlaggingId(job.id);
+    setFeedback(null);
+    try {
+      await onToggleNotInterested(job.id, markNotInterested);
+      await runBackendCatalogSearch(currentFilters);
+      setFeedback({
+        type: 'success',
+        text: markNotInterested
+          ? `Flagged "${job.company} — ${job.role}" as Not Interested and hid it from active discovery.`
+          : `Restored "${job.company} — ${job.role}" back to active discovery.`,
+        undoJobId: markNotInterested ? job.id : undefined,
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Could not update Not Interested flag.',
+      });
+    } finally {
+      setFlaggingId(null);
     }
   };
 
@@ -403,15 +473,33 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           }`}
         >
           <span>{feedback.text}</span>
-          {feedback.type === 'success' && (
-            <button
-              type="button"
-              onClick={() => onNavigate('/queue')}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-900 whitespace-nowrap"
-            >
-              Review Queue <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {feedback.undoJobId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const idToRestore = feedback.undoJobId;
+                  if (!idToRestore) return;
+                  void onToggleNotInterested(idToRestore, false).then(() => {
+                    setFeedback({ type: 'success', text: 'Posting restored to active discovery.' });
+                    return runBackendCatalogSearch(currentFilters);
+                  });
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 hover:text-indigo-700 underline underline-offset-2 whitespace-nowrap"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Undo
+              </button>
+            )}
+            {feedback.type === 'success' && feedback.showQueueLink !== false && !feedback.undoJobId && (
+              <button
+                type="button"
+                onClick={() => onNavigate('/queue')}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-900 whitespace-nowrap"
+              >
+                Review Queue <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -661,6 +749,23 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 {portal}
               </button>
             ))}
+
+            <button
+              type="button"
+              onClick={() =>
+                setNotInterestedMode((prev) => (prev === 'hide' ? 'only' : 'hide'))
+              }
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                notInterestedMode === 'only'
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <Ban className="h-3.5 w-3.5" aria-hidden="true" />
+              {notInterestedMode === 'only'
+                ? `Viewing Not Interested (${notInterestedCount})`
+                : `Not Interested (${notInterestedCount})`}
+            </button>
           </div>
         </div>
       </form>
@@ -669,56 +774,85 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span className="flex items-center gap-2">
           <span>
-            Backend returned <strong className="font-mono text-slate-900 tabular-nums">{backendJobs.length}</strong> of{' '}
-            <span className="font-mono tabular-nums">{totalCatalogCount}</span> resume-scored roles
-            <strong className="text-indigo-700"> · Strict filter: {countryFilter} only</strong>
+            {notInterestedMode === 'only' ? (
+              <>
+                Showing <strong className="font-mono text-rose-700 tabular-nums">{backendJobs.length}</strong>{' '}
+                posting(s) flagged Not Interested · Click Restore to bring any role back
+              </>
+            ) : (
+              <>
+                Backend returned <strong className="font-mono text-slate-900 tabular-nums">{backendJobs.length}</strong> of{' '}
+                <span className="font-mono tabular-nums">{totalCatalogCount}</span> active resume-scored roles
+                <strong className="text-indigo-700"> · Strict filter: {countryFilter} only</strong>
+              </>
+            )}
           </span>
           {(searchingBackend || discoveringLive) && (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" aria-hidden="true" />
           )}
         </span>
-        <span>Auto-queue threshold: &gt;75% ATS Match</span>
+        <span>Choose Tailor &amp; Queue or Apply Directly with your uploaded resume</span>
       </div>
 
       {backendJobs.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center space-y-3">
           <p className="text-base font-semibold text-slate-900">
-            No cached jobs found in {countryFilter} matching your filters
+            {notInterestedMode === 'only'
+              ? 'No postings flagged as Not Interested'
+              : `No cached jobs found in ${countryFilter} matching your filters`}
           </p>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Run a live backend search to discover roles strictly in {countryFilter} matched to your resume, or reset filters.
+            {notInterestedMode === 'only'
+              ? 'Any job you flag as Not Interested will appear here so you can review or restore it later.'
+              : `Run a live backend search to discover roles strictly in ${countryFilter} matched to your resume, or reset filters.`}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-            <button
-              type="button"
-              disabled={discoveringLive || !hasResume}
-              onClick={() => void handleDiscoverFromResume()}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-            >
-              <Globe className="h-4 w-4" />
-              Search Live Jobs in {countryFilter}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setCountryFilter('India');
-                setMarketFilter('India');
-                setWorkModeFilter('All');
-                setPortalFilter('All');
-                setMinMatch(0);
-              }}
-              className="min-h-[44px] rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-              Reset Filters
-            </button>
+            {notInterestedMode === 'only' ? (
+              <button
+                type="button"
+                onClick={() => setNotInterestedMode('hide')}
+                className="min-h-[44px] rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Back to Active Jobs
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={discoveringLive || !hasResume}
+                  onClick={() => void handleDiscoverFromResume()}
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  <Globe className="h-4 w-4" />
+                  Search Live Jobs in {countryFilter}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setCountryFilter('India');
+                    setMarketFilter('India');
+                    setWorkModeFilter('All');
+                    setPortalFilter('All');
+                    setMinMatch(0);
+                  }}
+                  className="min-h-[44px] rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                  Reset Filters
+                </button>
+              </>
+            )}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {backendJobs.map((job) => {
-            const isQueued = queuedJobIds.has(job.id);
+            const queuedItem = queuedItemByJobId.get(job.id);
+            const isQueued = Boolean(queuedItem);
             const isAnalyzing = analyzingId === job.id;
+            const isDirectApplying = directApplyingId === job.id;
+            const isFlagging = flaggingId === job.id;
+            const isNotInterested = Boolean(job.notInterested);
             const safeUrl = sanitizeExternalUrl(job.jobUrl);
             const scoreColor =
               job.matchScore >= 85
@@ -730,7 +864,11 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             return (
               <article
                 key={job.id}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300"
+                className={`flex flex-col justify-between rounded-2xl border p-5 transition-colors ${
+                  isNotInterested
+                    ? 'border-rose-200 bg-rose-50/30'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-4">
@@ -739,6 +877,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                         {job.company} · {job.portalType} · {job.portalComplexity}
                         {job.discoverySource === 'resume_backend_search' && (
                           <span className="text-indigo-600 font-semibold"> · Live Resume Match</span>
+                        )}
+                        {isNotInterested && (
+                          <span className="text-rose-700 font-semibold"> · Flagged Not Interested</span>
                         )}
                       </p>
                       <h3 className="mt-1 text-base font-bold text-slate-900 leading-snug">
@@ -798,50 +939,101 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
-                  {safeUrl ? (
-                    <a
-                      href={safeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-[40px] items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-                    >
-                      Source Posting <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <span />
-                  )}
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    {safeUrl ? (
+                      <a
+                        href={safeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-[36px] items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+                      >
+                        Source Posting <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <span />
+                    )}
 
-                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      disabled={isAnalyzing}
-                      onClick={() => handleAnalyzeExisting(job, !isQueued)}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60 transition-colors whitespace-nowrap"
+                      disabled={isFlagging}
+                      onClick={() => void handleNotInterestedToggle(job, !isNotInterested)}
+                      className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                        isNotInterested
+                          ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                          : 'text-slate-500 hover:text-rose-700 hover:bg-rose-50'
+                      }`}
                     >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Tailoring...
-                        </>
+                      {isFlagging ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : isNotInterested ? (
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                       ) : (
-                        <>
-                          <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-                          {isQueued ? 'Re-Tailor with Gemini' : 'Tailor & Queue'}
-                        </>
+                        <Ban className="h-3.5 w-3.5" aria-hidden="true" />
                       )}
+                      {isNotInterested ? 'Restore Posting' : 'Not Interested'}
                     </button>
+                  </div>
 
-                    {isQueued && (
+                  {!isNotInterested && (
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => onNavigate('/queue')}
-                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+                        disabled={isAnalyzing || isDirectApplying || !hasResume}
+                        onClick={() => void handleAnalyzeExisting(job, !isQueued)}
+                        className="flex-1 inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60 transition-colors whitespace-nowrap"
                       >
-                        In Queue <ArrowRight className="h-3.5 w-3.5" />
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Tailoring...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                            {isQueued && queuedItem?.applicationMode !== 'direct_resume'
+                              ? 'Re-Tailor & Queue'
+                              : 'Tailor & Queue'}
+                          </>
+                        )}
                       </button>
-                    )}
-                  </div>
+
+                      <button
+                        type="button"
+                        disabled={isDirectApplying || isAnalyzing || !hasResume}
+                        onClick={() => void handleDirectApply(job)}
+                        title={
+                          masterProfile.uploadedResumeFileName
+                            ? `Apply directly with ${masterProfile.uploadedResumeFileName} (no AI edits)`
+                            : 'Apply directly with your uploaded base resume (no AI edits)'
+                        }
+                        className="flex-1 inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors whitespace-nowrap"
+                      >
+                        {isDirectApplying ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Preparing...
+                          </>
+                        ) : (
+                          <>
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                            Apply Directly (Uploaded Resume)
+                          </>
+                        )}
+                      </button>
+
+                      {isQueued && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigate('/queue')}
+                          className="inline-flex min-h-[42px] items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                        >
+                          {queuedItem?.applicationMode === 'direct_resume' ? 'Direct in Queue' : 'In Queue'}
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </article>
             );

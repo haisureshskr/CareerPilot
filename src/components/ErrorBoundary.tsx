@@ -1,9 +1,11 @@
 import React from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { logReactCrash } from '../utils/crashLogger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
   errorMessage: string;
+  eventId: string;
 }
 
 export class ErrorBoundary extends React.Component<
@@ -12,10 +14,10 @@ export class ErrorBoundary extends React.Component<
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, errorMessage: '' };
+    this.state = { hasError: false, errorMessage: '', eventId: '' };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     let readable = error.message || 'An unexpected error occurred.';
     try {
       const parsed = JSON.parse(readable);
@@ -26,6 +28,11 @@ export class ErrorBoundary extends React.Component<
       // plain error string
     }
     return { hasError: true, errorMessage: readable };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    const eventId = logReactCrash(error, info.componentStack);
+    this.setState({ eventId });
   }
 
   render() {
@@ -40,6 +47,11 @@ export class ErrorBoundary extends React.Component<
                 <p className="mt-1 text-xs text-slate-600 leading-relaxed break-words">
                   {this.state.errorMessage}
                 </p>
+                {this.state.eventId && (
+                  <p className="mt-2 font-mono text-[11px] text-slate-500">
+                    Crash Reference ID: {this.state.eventId}
+                  </p>
+                )}
               </div>
             </div>
             <button

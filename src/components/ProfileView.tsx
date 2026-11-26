@@ -24,6 +24,7 @@ interface ProfileViewProps {
     resumeText?: string;
     fileBase64?: string;
     mimeType?: string;
+    fileName?: string;
   }) => Promise<{ extractedLinkedInUrl?: string | null } | void>;
   onNavigate: (path: string) => void;
 }
@@ -144,6 +145,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         resumeText: resumeInput.trim() || undefined,
         fileBase64: uploadedBase64 || undefined,
         mimeType: uploadedMime || undefined,
+        fileName: uploadedFileName || undefined,
       });
       const fetchedLinkedIn = result && 'extractedLinkedInUrl' in result ? result.extractedLinkedInUrl : null;
       setStatusMessage({
@@ -307,6 +309,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-slate-500">
+                {profile.uploadedResumeFileName ? (
+                  <>
+                    Base file: <strong className="text-slate-700">{profile.uploadedResumeFileName}</strong> ·{' '}
+                  </>
+                ) : null}
                 {profile.lastParsedAt
                   ? `Last parsed ${new Date(profile.lastParsedAt).toLocaleString()}`
                   : 'Not yet parsed'}

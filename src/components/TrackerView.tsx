@@ -248,6 +248,18 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                       <span className="font-mono font-semibold text-indigo-700 tabular-nums">
                         {item.matchScore}% Match
                       </span>
+                      <span aria-hidden="true">·</span>
+                      <span
+                        className={
+                          item.applicationMode === 'direct_resume'
+                            ? 'font-medium text-emerald-700'
+                            : 'font-medium text-slate-600'
+                        }
+                      >
+                        {item.applicationMode === 'direct_resume'
+                          ? 'Uploaded Base Resume'
+                          : 'AI-Tailored Resume'}
+                      </span>
                     </div>
 
                     {item.actionReason && (
@@ -302,18 +314,26 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                   <div className="border-t border-slate-100 bg-slate-50/60 p-5 space-y-4 text-xs">
                     <div>
                       <p className="font-semibold text-slate-900">
-                        Tailored Resume Diff Snapshot ({item.resumeDiffs.length} bullets)
+                        {item.applicationMode === 'direct_resume'
+                          ? `Uploaded Base Resume Snapshot (${item.resumeLabel || 'Uploaded Base Resume'} · 0 AI edits)`
+                          : `Tailored Resume Diff Snapshot (${item.resumeDiffs.length} bullets)`}
                       </p>
-                      <ul className="mt-2 space-y-2 text-slate-700">
-                        {item.resumeDiffs.map((diff) => (
-                          <li key={diff.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                            <span className="font-semibold text-slate-900 block">
-                              {diff.experienceRef}
-                            </span>
-                            <span className="block mt-1 text-slate-700">{diff.after}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {item.resumeDiffs.length === 0 ? (
+                        <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-emerald-900">
+                          Submitted directly using your uploaded base resume with zero AI modifications.
+                        </p>
+                      ) : (
+                        <ul className="mt-2 space-y-2 text-slate-700">
+                          {item.resumeDiffs.map((diff) => (
+                            <li key={diff.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                              <span className="font-semibold text-slate-900 block">
+                                {diff.experienceRef}
+                              </span>
+                              <span className="block mt-1 text-slate-700">{diff.after}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
 
                     <div>
