@@ -1,0 +1,686 @@
+{
+  "masterProfile": {
+    "fullName": "SURESH KUMAR.K",
+    "headline": "SENIOR DIRECTOR",
+    "email": "haisureshskr@gmail.com",
+    "phone": "(+91) 9886672895",
+    "location": "bengaluru",
+    "summary": "Senior Quality Engineering Leader with 19+ years of experience driving large-scale QA, DevOps, and AI-powered transformation programs across global enterprise platforms. Currently leading 300+ global engineers delivering agentic digital transformation initiatives for Fortune 100 clients. Spearheaded AI-driven modernization strategies integrating EngineeringAI practices and intelligent automation platforms to accelerate legacy transformation from months to weeks. Proven track record of transforming traditional QA organizations into AI-enabled, Continuous Testing ecosystems achieving up to: 85%+ automation coverage, 60% regression cycle time reduction, 40% release velocity improvement, 20-25% QA operational cost optimization, 30% defect leakage reduction. Expert in orchestrating DevOps & CI/CD transformation, automation architecture, cloud-native QA, and global stakeholder alignment across multi-country programs. Recognized for scaling high-performance engineering teams, institution",
+    "skills": [],
+    "experience": [],
+    "education": [],
+    "projects": [],
+    "lastParsedAt": "2026-11-26T05:41:52.394Z"
+  },
+  "qaVault": {
+    "currentCtc": "₹31 LPA (Fixed) + ESOPs",
+    "expectedCtc": "₹42–48 LPA (India) / $165k+ USD (Global Remote)",
+    "noticePeriodDays": "30",
+    "workAuthorization": "Authorized to work in India; open to global remote contractor/EOR or visa sponsorship",
+    "relocationPreference": "Open to Bengaluru Hybrid or Global Remote",
+    "linkedinUrl": "https://www.linkedin.com/in/ananya-deshmukh-eng",
+    "customQAs": [
+      {
+        "id": "cqa-1",
+        "question": "Describe your experience optimizing web performance on mobile devices.",
+        "answer": "At FinStack Payments, I cut mobile checkout p95 FCP by 41% through route splitting, strict bundle budgets, and Workbox caching for low-bandwidth networks.",
+        "savedAt": "2026-11-25T02:47:23.622Z"
+      }
+    ]
+  },
+  "consentAccepted": true,
+  "jobs": [
+    {
+      "id": "job_res_servicenow_senior_director_quality_engineering_devops_transforma_0",
+      "company": "ServiceNow",
+      "role": "Senior Director, Quality Engineering & DevOps Transformation",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹44–52 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Workday",
+      "portalComplexity": "Multi-Step",
+      "matchScore": 95,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "DevOps",
+        "CI/CD",
+        "Continuous Testing",
+        "Automation Architecture",
+        "Cloud-Native QA",
+        "AI-Driven Modernization",
+        "Global Stakeholder Alignment"
+      ],
+      "missingKeywords": [
+        "ServiceNow Platform",
+        "ITSM",
+        "Kubernetes",
+        "SOC 2 Compliance"
+      ],
+      "description": "Lead global Quality Engineering and DevOps transformation programs across enterprise cloud platforms in Bengaluru. Drive AI-powered test automation architecture, accelerate release velocity, optimize QA operational costs, and align multi-country engineering stakeholders.",
+      "jobUrl": "https://careers.servicenow.com/jobs?location=Bengaluru",
+      "hiringTeam": {
+        "name": "ServiceNow Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=ServiceNow%20Senior%20Director%2C%20Quality%20Engineering%20%26%20DevOps%20Transformation",
+        "postedAgo": "2 days ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Directly aligns with 19+ years of senior QA leadership, 300+ engineer team scale, and proven metrics in AI-enabled Continuous Testing, CI/CD transformation, and defect leakage reduction."
+    },
+    {
+      "id": "job_res_epam_systems_director_of_quality_engineering_intelligent_automat_1",
+      "company": "EPAM Systems",
+      "role": "Director of Quality Engineering & Intelligent Automation",
+      "location": "Bengaluru, India / Global Remote",
+      "market": "Global",
+      "salary": "₹42–48 LPA / $165k+ USD",
+      "workMode": "Hybrid",
+      "portalType": "Greenhouse",
+      "portalComplexity": "1-Click",
+      "matchScore": 93,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "Intelligent Automation",
+        "Agentic Digital Transformation",
+        "QA",
+        "Continuous Testing",
+        "Enterprise Platforms",
+        "DevOps"
+      ],
+      "missingKeywords": [
+        "Playwright",
+        "AWS Certified DevOps",
+        "TOGAF"
+      ],
+      "description": "Spearhead enterprise Quality Engineering and AI-driven modernization engagements for Fortune 100 clients. Scale global QA delivery teams, establish intelligent automation platforms, and reduce regression cycle times across complex legacy and cloud-native platforms.",
+      "jobUrl": "https://www.epam.com/careers/job-listings?query=Quality+Engineering&country=India",
+      "hiringTeam": {
+        "name": "EPAM Systems Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=EPAM%20Systems%20Director%20of%20Quality%20Engineering%20%26%20Intelligent%20Automation",
+        "postedAgo": "3 days ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Strong match for Fortune 100 agentic digital transformation delivery, EngineeringAI integration, and large-scale automation coverage initiatives."
+    },
+    {
+      "id": "job_res_salesforce_senior_director_enterprise_quality_engineering_2",
+      "company": "Salesforce",
+      "role": "Senior Director, Enterprise Quality Engineering",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹45–54 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Workday",
+      "portalComplexity": "Multi-Step",
+      "matchScore": 91,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "Cloud-Native QA",
+        "CI/CD",
+        "Automation Architecture",
+        "Global Stakeholder Alignment",
+        "Release Velocity"
+      ],
+      "missingKeywords": [
+        "Salesforce Apex",
+        "MuleSoft",
+        "Terraform"
+      ],
+      "description": "Own quality strategy, continuous testing ecosystems, and cloud-native QA governance for multi-region enterprise platform teams in Bengaluru. Partner with global engineering executives to improve release velocity and minimize production defect leakage.",
+      "jobUrl": "https://careers.salesforce.com/en/jobs/?location=Bengaluru",
+      "hiringTeam": {
+        "name": "Salesforce Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=Salesforce%20Senior%20Director%2C%20Enterprise%20Quality%20Engineering",
+        "postedAgo": "4 days ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Matches senior director leadership across 300+ global engineers, cloud-native QA architecture, and enterprise release velocity improvements."
+    },
+    {
+      "id": "job_res_atlassian_head_of_quality_engineering_release_velocity_3",
+      "company": "Atlassian",
+      "role": "Head of Quality Engineering & Release Velocity",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹46–55 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Lever",
+      "portalComplexity": "1-Click",
+      "matchScore": 89,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "DevOps",
+        "CI/CD",
+        "Continuous Testing",
+        "Automation Architecture",
+        "AI-Driven Modernization"
+      ],
+      "missingKeywords": [
+        "Jira Align",
+        "Microservices Observability",
+        "Datadog"
+      ],
+      "description": "Lead Quality Engineering organizations in Bengaluru focused on transforming QA into an AI-enabled continuous testing capability. Drive CI/CD maturity, automation architecture standards, and cross-functional engineering excellence.",
+      "jobUrl": "https://www.atlassian.com/company/careers/all-jobs?location=Bengaluru",
+      "hiringTeam": {
+        "name": "Atlassian Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=Atlassian%20Head%20of%20Quality%20Engineering%20%26%20Release%20Velocity",
+        "postedAgo": "5 days ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Aligns with proven outcomes in 85%+ automation coverage, 60% regression cycle reduction, and 40% release velocity gains across distributed teams."
+    },
+    {
+      "id": "job_res_gitlab_director_of_quality_engineering_4",
+      "company": "GitLab",
+      "role": "Director of Quality Engineering",
+      "location": "Global Remote",
+      "market": "Global",
+      "salary": "$170k–$200k USD",
+      "workMode": "Remote",
+      "portalType": "Greenhouse",
+      "portalComplexity": "1-Click",
+      "matchScore": 88,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "DevOps",
+        "CI/CD",
+        "Continuous Testing",
+        "Cloud-Native QA",
+        "Global Stakeholder Alignment"
+      ],
+      "missingKeywords": [
+        "Ruby on Rails",
+        "GitLab CI YAML",
+        "Go"
+      ],
+      "description": "Lead globally distributed Quality Engineering teams in an all-remote environment to scale automated testing frameworks, CI/CD pipelines, and AI-assisted quality workflows across cloud-native enterprise software.",
+      "jobUrl": "https://about.gitlab.com/jobs/all-jobs/",
+      "hiringTeam": {
+        "name": "GitLab Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=GitLab%20Director%20of%20Quality%20Engineering",
+        "postedAgo": "1 week ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Fits global remote leadership preference and deep background orchestrating DevOps, CI/CD transformation, and multi-country engineering alignment."
+    },
+    {
+      "id": "job_res_harness_senior_director_continuous_testing_quality_5",
+      "company": "Harness",
+      "role": "Senior Director, Continuous Testing & Quality",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹44–50 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Greenhouse",
+      "portalComplexity": "1-Click",
+      "matchScore": 87,
+      "matchedKeywords": [
+        "Continuous Testing",
+        "CI/CD",
+        "DevOps",
+        "Intelligent Automation",
+        "Quality Engineering",
+        "AI-Driven Modernization"
+      ],
+      "missingKeywords": [
+        "Chaos Engineering",
+        "Feature Flags",
+        "Helm"
+      ],
+      "description": "Direct engineering and quality automation teams building next-generation CI/CD and continuous testing capabilities in Bengaluru. Leverage AI-driven test intelligence to accelerate enterprise software delivery and reduce regression bottlenecks.",
+      "jobUrl": "https://www.harness.io/company/careers",
+      "hiringTeam": {
+        "name": "Harness Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=Harness%20Senior%20Director%2C%20Continuous%20Testing%20%26%20Quality",
+        "postedAgo": "6 days ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Strong alignment with Continuous Testing ecosystems, CI/CD transformation, and AI-powered QA operational cost optimization."
+    },
+    {
+      "id": "job_res_thoughtworks_director_of_quality_strategy_ai_enabled_testing_6",
+      "company": "Thoughtworks",
+      "role": "Director of Quality Strategy & AI-Enabled Testing",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹42–48 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Greenhouse",
+      "portalComplexity": "1-Click",
+      "matchScore": 86,
+      "matchedKeywords": [
+        "QA",
+        "AI-Driven Modernization",
+        "EngineeringAI",
+        "Agentic Digital Transformation",
+        "Automation Architecture",
+        "Enterprise Platforms"
+      ],
+      "missingKeywords": [
+        "Contract Testing",
+        "Pact",
+        "SAFe Agile"
+      ],
+      "description": "Advise Fortune 100 enterprise clients on modernizing legacy QA organizations into AI-enabled continuous delivery ecosystems. Shape quality strategy, intelligent test automation practices, and multi-country transformation roadmaps.",
+      "jobUrl": "https://www.thoughtworks.com/en-in/careers/jobs",
+      "hiringTeam": {
+        "name": "Thoughtworks Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=Thoughtworks%20Director%20of%20Quality%20Strategy%20%26%20AI-Enabled%20Testing",
+        "postedAgo": "1 week ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Directly reflects experience spearheading EngineeringAI practices and accelerating legacy QA modernization from months to weeks."
+    },
+    {
+      "id": "job_res_browserstack_senior_director_of_quality_engineering_automation_7",
+      "company": "BrowserStack",
+      "role": "Senior Director of Quality Engineering & Automation",
+      "location": "Bengaluru, India",
+      "market": "India",
+      "salary": "₹45–55 LPA",
+      "workMode": "Hybrid",
+      "portalType": "Lever",
+      "portalComplexity": "1-Click",
+      "matchScore": 85,
+      "matchedKeywords": [
+        "Quality Engineering",
+        "Automation Architecture",
+        "Continuous Testing",
+        "Cloud-Native QA",
+        "Intelligent Automation"
+      ],
+      "missingKeywords": [
+        "Appium",
+        "Selenium Grid Internals",
+        "WebRTC"
+      ],
+      "description": "Scale quality engineering and intelligent automation initiatives for high-volume cloud testing infrastructure. Partner with product and platform leaders to achieve high automation coverage, faster release cycles, and minimal defect leakage.",
+      "jobUrl": "https://www.browserstack.com/careers",
+      "hiringTeam": {
+        "name": "BrowserStack Talent Team",
+        "title": "Hiring Team · Public Careers",
+        "linkedinUrl": "https://www.linkedin.com/jobs/search/?keywords=BrowserStack%20Senior%20Director%20of%20Quality%20Engineering%20%26%20Automation",
+        "postedAgo": "1 week ago",
+        "autoPurgeDaysRemaining": 30
+      },
+      "analyzedAt": "2026-11-26T06:01:41.768Z",
+      "discoverySource": "resume_backend_search",
+      "resumeMatchReason": "Matches executive automation architecture expertise, cloud-native QA leadership, and high-scale testing platform transformation."
+    }
+  ],
+  "queue": [
+    {
+      "id": "q-razorpay",
+      "jobId": "job-razorpay",
+      "company": "Razorpay",
+      "role": "Senior Frontend Engineer — Checkout Platform",
+      "location": "Bengaluru, India",
+      "salary": "₹34L – ₹46L CTC",
+      "workMode": "Hybrid",
+      "portalType": "Greenhouse",
+      "portalComplexity": "1-Click",
+      "matchScore": 91,
+      "hiringTeam": {
+        "name": "Siddharth Kulkarni",
+        "title": "Engineering Manager, Checkout Experience",
+        "linkedinUrl": "https://www.linkedin.com/in/siddharth-kulkarni-checkout",
+        "postedAgo": "2 days ago",
+        "autoPurgeDaysRemaining": 28
+      },
+      "linkedinNote": "Hi Siddharth — I saw your Checkout Platform FE opening at Razorpay. Over the past 3 years at FinStack Payments I built a React/TS UPI checkout SDK (1.8M monthly txns) and cut mobile p95 FCP by 41%. Would love to connect!",
+      "resumeDiffs": [
+        {
+          "id": "diff-rzp-1",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Architected a modular React & TypeScript checkout SDK handling 1.8M monthly UPI and card transactions with 99.96% uptime.",
+          "after": "Architected a high-throughput React & TypeScript checkout SDK powering 1.8M monthly UPI and card transactions at 99.96% uptime (pinned as Bullet #1 for Checkout Platform alignment).",
+          "rationale": "Promoted verified UPI/card checkout SDK bullet to lead position to mirror JD core focus."
+        },
+        {
+          "id": "diff-rzp-2",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Reduced mobile checkout p95 First Contentful Paint by 41% via route-level code splitting, asset preloading, and PWA offline shell caching.",
+          "after": "Cut mobile checkout p95 First Contentful Paint (FCP) by 41% through bundle-size budgets, route-level code splitting, asset preloading, and PWA shell caching.",
+          "rationale": "Aligned verified performance metric directly with Razorpay p95 mobile latency keywords."
+        },
+        {
+          "id": "diff-rzp-3",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Led a 4-engineer design system guild that unified 38 accessible UI primitives across merchant dashboards and consumer surfaces.",
+          "after": "Led a 4-engineer design system initiative standardizing 38 WCAG-accessible UI primitives across consumer checkout and merchant web surfaces.",
+          "rationale": "Surfaced accessibility and design systems alignment without altering verified team size or scope."
+        }
+      ],
+      "screeningQuestions": [
+        {
+          "id": "sq-rzp-1",
+          "question": "Why are you interested in Razorpay’s Checkout Platform team, and what relevant performance challenge have you solved?",
+          "answer": "I have spent the last three years building high-volume UPI and card checkout experiences in React and TypeScript at FinStack Payments (1.8M monthly transactions). My favorite performance win was reducing mobile checkout p95 FCP by 41% via route splitting and PWA shell caching—skills directly transferable to Razorpay’s scale.",
+          "confidence": "AMBER",
+          "sourceLabel": "AI draft · Review required",
+          "reviewed": false
+        },
+        {
+          "id": "sq-rzp-2",
+          "question": "Current CTC (Annual Fixed + Variable)",
+          "answer": "₹31 LPA (Fixed) + ESOPs",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "currentCtc",
+          "reviewed": true
+        },
+        {
+          "id": "sq-rzp-3",
+          "question": "Expected CTC",
+          "answer": "₹42–48 LPA (India) / $165k+ USD (Global Remote)",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "expectedCtc",
+          "reviewed": true
+        },
+        {
+          "id": "sq-rzp-4",
+          "question": "Notice Period (in days)",
+          "answer": "30 days",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "noticePeriodDays",
+          "reviewed": true
+        }
+      ],
+      "createdAt": "2026-11-25T23:47:23.622Z",
+      "status": "pending"
+    },
+    {
+      "id": "q-stripe",
+      "jobId": "job-stripe",
+      "company": "Stripe",
+      "role": "Full-Stack Product Engineer — Global Billing",
+      "location": "Remote (US / Global)",
+      "salary": "$168k – $208k USD",
+      "workMode": "Remote",
+      "portalType": "Ashby",
+      "portalComplexity": "1-Click",
+      "matchScore": 89,
+      "hiringTeam": {
+        "name": "Elena Rostova",
+        "title": "Staff Recruiting Partner, Billing & Revenue",
+        "linkedinUrl": "https://www.linkedin.com/in/elena-rostova-recruiting",
+        "postedAgo": "1 day ago",
+        "autoPurgeDaysRemaining": 29
+      },
+      "linkedinNote": "Hi Elena — I applied for Stripe’s Global Billing Product Engineer role. I previously built multi-currency invoicing & idempotent webhook pipelines at CloudLedger Labs and checkout SDKs at FinStack. Would love to connect!",
+      "resumeDiffs": [
+        {
+          "id": "diff-str-1",
+          "experienceRef": "CloudLedger Labs · Full-Stack Software Engineer",
+          "before": "Built multi-currency invoicing and GST reconciliation modules in React, Node.js, and PostgreSQL for 14,000+ SMBs.",
+          "after": "Engineered multi-currency invoicing and tax reconciliation workflows in React, Node.js, and PostgreSQL serving 14,000+ SMBs (elevated for Global Billing relevance).",
+          "rationale": "Highlighted verified multi-currency billing & full-stack PostgreSQL experience."
+        },
+        {
+          "id": "diff-str-2",
+          "experienceRef": "CloudLedger Labs · Full-Stack Software Engineer",
+          "before": "Designed idempotent webhook ingestion pipelines and rate-limited REST APIs processing 250k daily ledger events.",
+          "after": "Designed idempotent webhook ingestion pipelines and rate-limited REST APIs handling 250k daily financial ledger events reliably.",
+          "rationale": "Matched Stripe’s idempotent API reliability focus using exact verified metrics."
+        },
+        {
+          "id": "diff-str-3",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Partnered with backend and risk teams to ship step-up OTP verification flows with clear human fallback diagnostics.",
+          "after": "Collaborated across frontend, backend, and risk engineering to ship resilient payment verification flows with transparent fallback diagnostics.",
+          "rationale": "Emphasized cross-functional full-stack product ownership strictly from Master Profile."
+        }
+      ],
+      "screeningQuestions": [
+        {
+          "id": "sq-str-1",
+          "question": "Tell us about a full-stack billing or financial system you built end-to-end and how you ensured reliability.",
+          "answer": "At CloudLedger Labs, I built multi-currency invoicing in React, Node.js, and PostgreSQL for 14,000+ SMBs alongside idempotent webhook ingestion pipelines handling 250k daily ledger events. Combining idempotency keys with automated Playwright/Jest tests (lifting coverage from 34% to 82%) cut regression hotfixes in half.",
+          "confidence": "AMBER",
+          "sourceLabel": "AI draft · Review required",
+          "reviewed": false
+        },
+        {
+          "id": "sq-str-2",
+          "question": "Work Authorization / Visa Status",
+          "answer": "Authorized to work in India; open to global remote contractor/EOR or visa sponsorship",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "workAuthorization",
+          "reviewed": true
+        },
+        {
+          "id": "sq-str-3",
+          "question": "Relocation / Remote Work Preference",
+          "answer": "Open to Bengaluru Hybrid or Global Remote",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "relocationPreference",
+          "reviewed": true
+        },
+        {
+          "id": "sq-str-4",
+          "question": "LinkedIn Profile URL",
+          "answer": "https://www.linkedin.com/in/ananya-deshmukh-eng",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "linkedinUrl",
+          "reviewed": true
+        }
+      ],
+      "createdAt": "2026-11-26T00:47:23.622Z",
+      "status": "pending"
+    },
+    {
+      "id": "q-linear",
+      "jobId": "job-linear",
+      "company": "Linear",
+      "role": "Senior Product Engineer",
+      "location": "Remote (US / EU / Global)",
+      "salary": "$175k – $215k USD",
+      "workMode": "Remote",
+      "portalType": "Ashby",
+      "portalComplexity": "1-Click",
+      "matchScore": 86,
+      "hiringTeam": {
+        "name": "Marcus Lindqvist",
+        "title": "Head of Engineering Recruiting",
+        "linkedinUrl": "https://www.linkedin.com/in/marcus-lindqvist-linear",
+        "postedAgo": "3 days ago",
+        "autoPurgeDaysRemaining": 27
+      },
+      "linkedinNote": "Hi Marcus — huge admirer of Linear’s speed and craft. I’ve built offline-first PWAs (IndexedDB/Workbox) and led a 38-component React/TS design system. Just reviewed my application for Senior Product Engineer — happy to connect!",
+      "resumeDiffs": [
+        {
+          "id": "diff-lin-1",
+          "experienceRef": "PayGrid Offline POS · Project",
+          "before": "Offline-first merchant point-of-sale PWA with queued transaction sync and sub-100ms touch responsiveness on low-end Android devices.",
+          "after": "Built PayGrid, an offline-first React/TypeScript PWA using IndexedDB & Workbox with queued sync and sub-100ms interaction responsiveness.",
+          "rationale": "Elevated verified offline-first local state project directly relevant to Linear."
+        },
+        {
+          "id": "diff-lin-2",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Led a 4-engineer design system guild that unified 38 accessible UI primitives across merchant dashboards and consumer surfaces.",
+          "after": "Led a 4-engineer design system guild unifying 38 accessible React & TypeScript UI primitives for consistent product craft across web surfaces.",
+          "rationale": "Connected verified design systems craft to Linear’s product engineering bar."
+        },
+        {
+          "id": "diff-lin-3",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Reduced mobile checkout p95 First Contentful Paint by 41% via route-level code splitting, asset preloading, and PWA offline shell caching.",
+          "after": "Reduced p95 First Contentful Paint by 41% via route-level code splitting, preloading, and service worker caching.",
+          "rationale": "Highlights verified latency discipline with exact original numbers."
+        }
+      ],
+      "screeningQuestions": [
+        {
+          "id": "sq-lin-1",
+          "question": "What is a web software detail or offline-first architecture decision you are especially proud of?",
+          "answer": "For PayGrid Offline POS, I paired IndexedDB queued mutation logs with Workbox shell caching in React/TypeScript so merchants kept sub-100ms interaction latency even when mobile connectivity dropped. At FinStack, I brought the same performance discipline to cut p95 FCP by 41%.",
+          "confidence": "AMBER",
+          "sourceLabel": "AI draft · Review required",
+          "reviewed": false
+        },
+        {
+          "id": "sq-lin-2",
+          "question": "Expected Compensation Range",
+          "answer": "₹42–48 LPA (India) / $165k+ USD (Global Remote)",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "expectedCtc",
+          "reviewed": true
+        },
+        {
+          "id": "sq-lin-3",
+          "question": "Notice Period (Days)",
+          "answer": "30 days",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "vaultField": "noticePeriodDays",
+          "reviewed": true
+        }
+      ],
+      "createdAt": "2026-11-26T01:47:23.622Z",
+      "status": "pending"
+    }
+  ],
+  "tracker": [
+    {
+      "id": "tr-1",
+      "queueItemId": "q-seed-vercel",
+      "jobId": "job-vercel",
+      "company": "Vercel",
+      "role": "Senior Software Engineer — Developer Experience",
+      "location": "Remote (Global)",
+      "salary": "$170k – $210k USD",
+      "portalType": "Greenhouse",
+      "matchScore": 83,
+      "status": "submitted",
+      "timestamp": "2026-11-25T21:47:23.622Z",
+      "auditReceiptId": "CP-2026-8419A",
+      "tailoredBulletsCount": 3,
+      "resumeDiffs": [
+        {
+          "id": "tr-diff-1",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Led a 4-engineer design system guild that unified 38 accessible UI primitives across merchant dashboards and consumer surfaces.",
+          "after": "Led a 4-engineer design system guild standardizing 38 accessible React & TypeScript UI primitives for developer and merchant dashboards.",
+          "rationale": "Emphasized verified design systems & dashboard craft for Vercel DX."
+        }
+      ],
+      "screeningQuestions": [
+        {
+          "id": "tr-sq-1",
+          "question": "Work Authorization / Visa Status",
+          "answer": "Authorized to work in India; open to global remote contractor/EOR or visa sponsorship",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "reviewed": true
+        }
+      ],
+      "humanVerified": true
+    },
+    {
+      "id": "tr-2",
+      "queueItemId": "q-seed-swiggy",
+      "jobId": "job-swiggy",
+      "company": "Swiggy",
+      "role": "Staff UI Engineer — Consumer Mobile Web",
+      "location": "Bengaluru, India",
+      "salary": "₹42L – ₹56L CTC",
+      "portalType": "Naukri",
+      "matchScore": 84,
+      "status": "action_required",
+      "timestamp": "2026-11-26T00:47:23.622Z",
+      "auditReceiptId": "CP-2026-9032B",
+      "actionReason": "Paused at portal CAPTCHA / Mobile OTP step — awaiting human completion.",
+      "tailoredBulletsCount": 3,
+      "resumeDiffs": [
+        {
+          "id": "tr-diff-2",
+          "experienceRef": "FinStack Payments · Senior Frontend Engineer",
+          "before": "Reduced mobile checkout p95 First Contentful Paint by 41% via route-level code splitting, asset preloading, and PWA offline shell caching.",
+          "after": "Cut mobile web p95 First Contentful Paint by 41% via route-level code splitting, asset preloading, and PWA offline shell caching.",
+          "rationale": "Aligned verified mobile web performance work with Swiggy Consumer Web."
+        }
+      ],
+      "screeningQuestions": [
+        {
+          "id": "tr-sq-2",
+          "question": "Notice Period (Days)",
+          "answer": "30 days",
+          "confidence": "GREEN",
+          "sourceLabel": "Q&A Vault · Verified fact",
+          "reviewed": true
+        }
+      ],
+      "humanVerified": true
+    }
+  ],
+  "optOuts": [],
+  "selectedTier": "tier4",
+  "submissionTimestamps": [
+    1795643243622
+  ],
+  "lastDiscoveredAt": "2026-11-26T06:01:41.768Z",
+  "lastDiscoveredProfileHash": "b93f1c59af8c08904767e1e8",
+  "groundingSources": [
+    {
+      "title": "Remotive Live Search (Quality Engineering Director)",
+      "uri": "https://remotive.com/remote-jobs?search=Quality%20Engineering%20Director"
+    },
+    {
+      "title": "Remotive Live Search (Senior Director QA)",
+      "uri": "https://remotive.com/remote-jobs?search=Senior%20Director%20QA"
+    },
+    {
+      "title": "Arbeitnow Public Job Board",
+      "uri": "https://www.arbeitnow.com/jobs"
+    },
+    {
+      "title": "Linear Careers (Ashby)",
+      "uri": "https://jobs.ashbyhq.com/linear"
+    },
+    {
+      "title": "Notion Careers (Ashby)",
+      "uri": "https://jobs.ashbyhq.com/notion"
+    },
+    {
+      "title": "Ramp Careers (Ashby)",
+      "uri": "https://jobs.ashbyhq.com/ramp"
+    },
+    {
+      "title": "Deel Careers (Ashby)",
+      "uri": "https://jobs.ashbyhq.com/deel"
+    },
+    {
+      "title": "Palantir Careers (Lever)",
+      "uri": "https://jobs.lever.co/palantir"
+    }
+  ]
+}

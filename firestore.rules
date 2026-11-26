@@ -1,0 +1,424 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSha256(hashId) {
+      return hashId is string && hashId.size() == 64 && hashId.matches('^[a-f0-9]{64}$');
+    }
+
+    function isBoundedString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptionalBoundedString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isStringList(val, maxItems) {
+      return val is list && val.size() <= maxItems && (val.size() == 0 || val[0] is string);
+    }
+
+    function isIntList(val, maxItems) {
+      return val is list && val.size() <= maxItems && (val.size() == 0 || val[0] is int);
+    }
+
+    function isMapList(val, maxItems) {
+      return val is list && val.size() <= maxItems && (val.size() == 0 || val[0] is map);
+    }
+
+    // --- Validation Blueprints (Pillar 2: Anti-Update-Gap) ---
+    function isValidUserWorkspace(data, userId) {
+      return data.keys().hasAll([
+          'ownerId',
+          'fullName',
+          'warrantyAccepted',
+          'selectedTier',
+          'submissionEpochMs',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'email',
+          'fullName',
+          'headline',
+          'phone',
+          'location',
+          'summary',
+          'skills',
+          'experience',
+          'education',
+          'projects',
+          'qaVault',
+          'warrantyAccepted',
+          'selectedTier',
+          'submissionEpochMs',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId == userId
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isBoundedString(data.fullName, 0, 120)
+        && isOptionalBoundedString(data, 'email', 200)
+        && isOptionalBoundedString(data, 'headline', 240)
+        && isOptionalBoundedString(data, 'phone', 40)
+        && isOptionalBoundedString(data, 'location', 120)
+        && isOptionalBoundedString(data, 'summary', 2000)
+        && (!('skills' in data) || isStringList(data.skills, 40))
+        && (!('experience' in data) || isMapList(data.experience, 15))
+        && (!('education' in data) || isMapList(data.education, 10))
+        && (!('projects' in data) || isMapList(data.projects, 15))
+        && (!('qaVault' in data) || data.qaVault is map)
+        && data.warrantyAccepted is bool
+        && data.selectedTier in ['tier1', 'tier2', 'tier3', 'tier4']
+        && isIntList(data.submissionEpochMs, 25)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidJobListing(data, userId) {
+      return data.keys().hasAll([
+          'ownerId',
+          'company',
+          'role',
+          'market',
+          'workMode',
+          'portalType',
+          'portalComplexity',
+          'matchScore',
+          'description',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'company',
+          'role',
+          'location',
+          'market',
+          'salary',
+          'workMode',
+          'portalType',
+          'portalComplexity',
+          'matchScore',
+          'matchedKeywords',
+          'missingKeywords',
+          'description',
+          'jobUrl',
+          'hiringTeam',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId == userId
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isBoundedString(data.company, 1, 120)
+        && isBoundedString(data.role, 1, 160)
+        && isOptionalBoundedString(data, 'location', 120)
+        && data.market in ['India', 'Global']
+        && isOptionalBoundedString(data, 'salary', 100)
+        && data.workMode in ['Remote', 'Hybrid', 'On-site']
+        && data.portalType in ['Greenhouse', 'Lever', 'Ashby', 'Workday', 'Naukri']
+        && data.portalComplexity in ['1-Click', 'Multi-Step']
+        && data.matchScore is int
+        && data.matchScore >= 0
+        && data.matchScore <= 100
+        && (!('matchedKeywords' in data) || isStringList(data.matchedKeywords, 12))
+        && (!('missingKeywords' in data) || isStringList(data.missingKeywords, 12))
+        && isBoundedString(data.description, 1, 6000)
+        && isOptionalBoundedString(data, 'jobUrl', 500)
+        && (!('hiringTeam' in data) || data.hiringTeam is map)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidApplicationRecord(data, userId) {
+      return data.keys().hasAll([
+          'ownerId',
+          'jobId',
+          'company',
+          'role',
+          'portalType',
+          'matchScore',
+          'status',
+          'linkedinNote',
+          'resumeDiffs',
+          'screeningQuestions',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'jobId',
+          'company',
+          'role',
+          'location',
+          'salary',
+          'workMode',
+          'portalType',
+          'portalComplexity',
+          'jobUrl',
+          'matchScore',
+          'status',
+          'hiringTeam',
+          'linkedinNote',
+          'resumeDiffs',
+          'screeningQuestions',
+          'auditReceiptId',
+          'actionReason',
+          'user_approved_at',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId == userId
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.jobId)
+        && isBoundedString(data.company, 1, 120)
+        && isBoundedString(data.role, 1, 160)
+        && isOptionalBoundedString(data, 'location', 120)
+        && isOptionalBoundedString(data, 'salary', 100)
+        && (!('workMode' in data) || data.workMode in ['Remote', 'Hybrid', 'On-site'])
+        && data.portalType in ['Greenhouse', 'Lever', 'Ashby', 'Workday', 'Naukri']
+        && (!('portalComplexity' in data) || data.portalComplexity in ['1-Click', 'Multi-Step'])
+        && isOptionalBoundedString(data, 'jobUrl', 500)
+        && data.matchScore is int
+        && data.matchScore >= 0
+        && data.matchScore <= 100
+        && data.status in ['PENDING_APPROVAL', 'APPROVED', 'SUBMITTED', 'ACTION_REQUIRED', 'SKIPPED']
+        && (!('hiringTeam' in data) || data.hiringTeam is map)
+        && isBoundedString(data.linkedinNote, 0, 280)
+        && isMapList(data.resumeDiffs, 8)
+        && isMapList(data.screeningQuestions, 15)
+        && isOptionalBoundedString(data, 'auditReceiptId', 64)
+        && isOptionalBoundedString(data, 'actionReason', 400)
+        && (!('user_approved_at' in data) || data.user_approved_at is timestamp)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRecruiterOptOut(data, hashId) {
+      return data.keys().hasAll(['urlSha256', 'active', 'createdAt'])
+        && data.keys().hasOnly(['urlSha256', 'active', 'createdAt'])
+        && isValidSha256(hashId)
+        && data.urlSha256 == hashId
+        && data.active == true
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection 1: Private User Workspace (PII Isolated) ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserWorkspace(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserWorkspace(incoming(), userId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Update Master Profile, Q&A Vault, and Warranty
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'email',
+            'fullName',
+            'headline',
+            'phone',
+            'location',
+            'summary',
+            'skills',
+            'experience',
+            'education',
+            'projects',
+            'qaVault',
+            'warrantyAccepted',
+            'updatedAt'
+          ])
+          ||
+          // Action 2: Switch PPP Pricing Tier
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'selectedTier',
+            'updatedAt'
+          ])
+          ||
+          // Action 3: Append rolling 24h anti-spam submission timestamp
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'submissionEpochMs',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // --- Subcollection 1A: User Jobs (Master Gate Protected) ---
+      match /jobs/{jobId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(jobId);
+        allow list: if isOwner(userId) && resource.data.ownerId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(jobId)
+          && isValidJobListing(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(jobId)
+          && isValidJobListing(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'matchScore',
+            'portalComplexity',
+            'matchedKeywords',
+            'missingKeywords',
+            'updatedAt'
+          ])
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(jobId);
+      }
+
+      // --- Subcollection 1B: User Applications (HITL Queue & Audit Tracker) ---
+      match /applications/{applicationId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(applicationId);
+        allow list: if isOwner(userId) && resource.data.ownerId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(applicationId)
+          && isValidApplicationRecord(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(applicationId)
+          && isValidApplicationRecord(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().jobId == existing().jobId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          // Terminal State Lock: SUBMITTED and SKIPPED records are immutable
+          && !(existing().status in ['SUBMITTED', 'SKIPPED'])
+          && (
+            // Action 1: Save edited screening answers while pending
+            (
+              existing().status == 'PENDING_APPROVAL'
+              && incoming().status == 'PENDING_APPROVAL'
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'screeningQuestions',
+                'linkedinNote',
+                'resumeDiffs',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Action 2: Human Approval (PENDING_APPROVAL -> APPROVED / SUBMITTED / ACTION_REQUIRED)
+            (
+              existing().status == 'PENDING_APPROVAL'
+              && incoming().status in ['APPROVED', 'SUBMITTED', 'ACTION_REQUIRED']
+              && incoming().user_approved_at == request.time
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'status',
+                'screeningQuestions',
+                'auditReceiptId',
+                'actionReason',
+                'user_approved_at',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Action 2B: Transition from APPROVED -> ACTION_REQUIRED or SUBMITTED (preserving user_approved_at)
+            (
+              existing().status == 'APPROVED'
+              && incoming().status in ['ACTION_REQUIRED', 'SUBMITTED']
+              && incoming().user_approved_at == existing().user_approved_at
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'status',
+                'auditReceiptId',
+                'actionReason',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Action 3: Skip pending draft
+            (
+              existing().status == 'PENDING_APPROVAL'
+              && incoming().status == 'SKIPPED'
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'status',
+                'auditReceiptId',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Action 4: Complete manual CAPTCHA/OTP handoff from ACTION_REQUIRED -> SUBMITTED
+            (
+              existing().status == 'ACTION_REQUIRED'
+              && incoming().status == 'SUBMITTED'
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'status',
+                'actionReason',
+                'updatedAt'
+              ])
+            )
+          )
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(applicationId);
+      }
+    }
+
+    // --- Collection 2: Public Zero-PII SHA-256 Recruiter Opt-Out Registry ---
+    match /recruiterOptOuts/{hashId} {
+      // Single-hash lookup only; list enumeration is strictly denied
+      allow get: if isValidSha256(hashId);
+      allow list: if false;
+      allow create: if isValidRecruiterOptOut(incoming(), hashId);
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "CareerPilot AI",
+  "description": "Compliance-first AI job search, truthful resume tailoring, and human-approved application assistant for global and Indian job markets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

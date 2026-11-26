@@ -1,0 +1,323 @@
+{
+  "entities": {
+    "UserWorkspace": {
+      "title": "UserWorkspace",
+      "description": "Private candidate workspace storing Master Profile, Q&A Vault, warranty consent, PPP pricing tier, and rolling 24h rate-limit timestamps.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fullName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "headline": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "skills": {
+          "type": "array",
+          "description": "Verified skills (max 40 entries)"
+        },
+        "experience": {
+          "type": "array",
+          "description": "Verified work history (max 15 entries)"
+        },
+        "education": {
+          "type": "array",
+          "description": "Verified education (max 10 entries)"
+        },
+        "projects": {
+          "type": "array",
+          "description": "Verified projects (max 15 entries)"
+        },
+        "qaVault": {
+          "type": "object",
+          "description": "Deterministic HR facts for screening questions"
+        },
+        "warrantyAccepted": {
+          "type": "boolean"
+        },
+        "selectedTier": {
+          "type": "string",
+          "enum": ["tier1", "tier2", "tier3", "tier4"]
+        },
+        "submissionEpochMs": {
+          "type": "array",
+          "description": "Rolling 24h submission epoch millisecond timestamps (max 25 entries)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "fullName",
+        "warrantyAccepted",
+        "selectedTier",
+        "submissionEpochMs",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "JobListing": {
+      "title": "JobListing",
+      "description": "Job listing discovered or analyzed for the authenticated candidate.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "company": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "market": {
+          "type": "string",
+          "enum": ["India", "Global"]
+        },
+        "salary": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "workMode": {
+          "type": "string",
+          "enum": ["Remote", "Hybrid", "On-site"]
+        },
+        "portalType": {
+          "type": "string",
+          "enum": ["Greenhouse", "Lever", "Ashby", "Workday", "Naukri"]
+        },
+        "portalComplexity": {
+          "type": "string",
+          "enum": ["1-Click", "Multi-Step"]
+        },
+        "matchScore": {
+          "type": "integer"
+        },
+        "matchedKeywords": {
+          "type": "array"
+        },
+        "missingKeywords": {
+          "type": "array"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 6000
+        },
+        "jobUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "hiringTeam": {
+          "type": "object"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "company",
+        "role",
+        "market",
+        "workMode",
+        "portalType",
+        "portalComplexity",
+        "matchScore",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ApplicationRecord": {
+      "title": "ApplicationRecord",
+      "description": "Human-in-the-loop application draft, approval audit record, and tracker status.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "company": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "salary": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "workMode": {
+          "type": "string",
+          "enum": ["Remote", "Hybrid", "On-site"]
+        },
+        "portalType": {
+          "type": "string",
+          "enum": ["Greenhouse", "Lever", "Ashby", "Workday", "Naukri"]
+        },
+        "portalComplexity": {
+          "type": "string",
+          "enum": ["1-Click", "Multi-Step"]
+        },
+        "jobUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "matchScore": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING_APPROVAL", "APPROVED", "SUBMITTED", "ACTION_REQUIRED", "SKIPPED"]
+        },
+        "hiringTeam": {
+          "type": "object"
+        },
+        "linkedinNote": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "resumeDiffs": {
+          "type": "array"
+        },
+        "screeningQuestions": {
+          "type": "array"
+        },
+        "auditReceiptId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "actionReason": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "user_approved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "jobId",
+        "company",
+        "role",
+        "portalType",
+        "matchScore",
+        "status",
+        "linkedinNote",
+        "resumeDiffs",
+        "screeningQuestions",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RecruiterOptOut": {
+      "title": "RecruiterOptOut",
+      "description": "One-way SHA-256 hashed recruiter LinkedIn profile opt-out record containing zero PII.",
+      "type": "object",
+      "properties": {
+        "urlSha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["urlSha256", "active", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserWorkspace" },
+      "description": "Private per-user Master Profile, Q&A Vault, compliance consent, tier, and 24h anti-spam timestamps."
+    },
+    "/users/{userId}/jobs/{jobId}": {
+      "schema": { "$ref": "#/entities/JobListing" },
+      "description": "User's seeded and custom-analyzed job opportunities."
+    },
+    "/users/{userId}/applications/{applicationId}": {
+      "schema": { "$ref": "#/entities/ApplicationRecord" },
+      "description": "User's Human Approval Queue items and Applied Tracker audit history."
+    },
+    "/recruiterOptOuts/{hashId}": {
+      "schema": { "$ref": "#/entities/RecruiterOptOut" },
+      "description": "Public zero-PII registry of SHA-256 hashed LinkedIn URLs opted out by recruiters."
+    }
+  }
+}
